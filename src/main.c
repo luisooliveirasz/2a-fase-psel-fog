@@ -9,23 +9,38 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "stb_image.h"
+
 #define PI 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679f
 
 const char* vertex_src =
     "#version 330 core\n"
+
     "layout(location = 0) in vec3 a_position;\n"
     "layout(location = 1) in vec4 a_color;\n"
     "layout(location = 2) in vec2 a_tex_coord;\n"
-    "layout(location = 3) in float a_tex_index;\n"
+    "layout(location = 3) in vec3 a_normal;\n"
+    "layout(location = 4) in float a_tex_index;\n"
+
     "uniform mat4 u_model;\n"
     "uniform mat4 u_view;\n"
     "uniform mat4 u_projection;\n"
+    
     "out vec4 v_color;\n"
     "out vec2 v_tex_coord;\n"
+    "out vec3 v_normal;\n"
+    "out vec3 v_frag_pos;\n"
     "out float v_tex_index;\n"
+    
     "void main()\n"
     "{\n"
-    "    gl_Position = u_projection * u_view * u_model * vec4(a_position, 1.0);\n"
+    "    vec4 world_pos = u_model * vec4(a_position, 1.0);\n"
+    "    gl_Position = u_projection * u_view * world_pos;\n"
+
+    "    v_frag_pos = world_pos.xyz;\n"
+
+    "    v_normal = mat3(transpose(inverse(u_model))) * a_normal;\n"
+
     "    v_color     = a_color;\n"
     "    v_tex_coord = a_tex_coord;\n"
     "    v_tex_index = a_tex_index;\n"
@@ -33,33 +48,39 @@ const char* vertex_src =
 
 const char* fragment_src =
     "#version 330 core\n"
+
     "in vec4  v_color;\n"
     "in vec2  v_tex_coord;\n"
-    "in float v_tex_index;\n"
-    "uniform sampler2D u_textures[16];\n"
+    "in vec3  v_normal;\n"
+    "in vec3  v_frag_pos;\n"
+
+    "uniform vec3 u_light_pos;\n"
+    "uniform vec3 u_light_color;\n"
+    "uniform sampler2D u_texture;\n"
+    "uniform int u_use_texture;\n"
+
     "out vec4 frag_color;\n"
+
     "void main()\n"
     "{\n"
-    "    vec4 tex_color;\n"
-    "    int idx = int(v_tex_index);\n"
-    "    if      (idx == 0)  tex_color = texture(u_textures[0],  v_tex_coord);\n"
-    "    else if (idx == 1)  tex_color = texture(u_textures[1],  v_tex_coord);\n"
-    "    else if (idx == 2)  tex_color = texture(u_textures[2],  v_tex_coord);\n"
-    "    else if (idx == 3)  tex_color = texture(u_textures[3],  v_tex_coord);\n"
-    "    else if (idx == 4)  tex_color = texture(u_textures[4],  v_tex_coord);\n"
-    "    else if (idx == 5)  tex_color = texture(u_textures[5],  v_tex_coord);\n"
-    "    else if (idx == 6)  tex_color = texture(u_textures[6],  v_tex_coord);\n"
-    "    else if (idx == 7)  tex_color = texture(u_textures[7],  v_tex_coord);\n"
-    "    else if (idx == 8)  tex_color = texture(u_textures[8],  v_tex_coord);\n"
-    "    else if (idx == 9)  tex_color = texture(u_textures[9],  v_tex_coord);\n"
-    "    else if (idx == 10) tex_color = texture(u_textures[10], v_tex_coord);\n"
-    "    else if (idx == 11) tex_color = texture(u_textures[11], v_tex_coord);\n"
-    "    else if (idx == 12) tex_color = texture(u_textures[12], v_tex_coord);\n"
-    "    else if (idx == 13) tex_color = texture(u_textures[13], v_tex_coord);\n"
-    "    else if (idx == 14) tex_color = texture(u_textures[14], v_tex_coord);\n"
-    "    else                tex_color = texture(u_textures[15], v_tex_coord);\n"
-    "    frag_color = tex_color * v_color;\n"
+    "    float ambient_strength = 0.1;\n"
+    "    vec3  ambient = ambient_strength * u_light_color;\n"
+
+    "    vec3 norm = normalize(v_normal);\n"
+    "    vec3 light_dir = normalize(u_light_pos - v_frag_pos);\n"
+    "    float diff = max(dot(norm, light_dir), 0.0);\n"
+    "    vec3 diffuse = diff * u_light_color;\n"
+
+    "    vec4 base_color;\n"
+    "    if (u_use_texture == 1)\n"
+    "        base_color = texture(u_texture, v_tex_coord);\n"
+    "    else\n"
+    "        base_color = v_color;\n"
+
+    "    vec3 final_color = base_color.rgb * (diffuse + ambient);\n"
+    "    frag_color = vec4(final_color, base_color.a);\n"
     "}\n";
+
 
 // ------------------------------------------------------------------
 // tipos
@@ -74,6 +95,14 @@ typedef struct { float m[16];         } mat4;
 // declarações
 // ------------------------------------------------------------------
 
+const vec3 MAIN_LIGHT_POS = (vec3){ 10.0, 10.0, 0.0 };
+const vec3 MAIN_LIGHT_COLOR = (vec3){ 1.0, 1.0, 1.0 };
+
+vec3  vec3_zero();
+vec3  vec3_right();
+vec3  vec3_up();
+vec3  vec3_forward();
+vec3  vec3_one();
 vec3  vec3_add(vec3* a, vec3* b);
 vec3  vec3_subtract(vec3* a, vec3* b);
 vec3  vec3_cross(vec3* a, vec3* b);
@@ -83,6 +112,9 @@ mat4 mat4_identity();
 mat4 mat4_multiply(mat4* a, mat4* b);
 mat4 mat4_translate(mat4* mat, vec3* vec);
 mat4 mat4_rotate(mat4* mat, vec3* axis, float angle);
+mat4 mat4_rotate_x(mat4* mat, float angle);
+mat4 mat4_rotate_y(mat4* mat, float angle);
+mat4 mat4_rotate_z(mat4* mat, float angle);
 mat4 mat4_scale(mat4* mat, vec3* vec);
 void mat4_print(mat4* mat);
 mat4 mat4_perspective(float fov, float aspect,
@@ -260,6 +292,124 @@ float time_delta()
 }
 
 // ------------------------------------------------------------------
+// .obj parser
+// ------------------------------------------------------------------
+
+typedef struct
+{
+    vec3* positions;   // lidos dos 'v'
+    vec2* texcoords;   // lidos dos 'vt'
+    vec3* normals;     // lidos dos 'vn'
+
+    int position_count;
+    int texcoord_count;
+    int normal_count;
+
+    int* pos_indices;
+    int* tex_indices;
+    int* nor_indices;
+    int  face_count;   // número de triângulos
+} obj_data_t;
+
+void load_obj(const char* path, obj_data_t* obj)
+{
+    FILE* fptr = fopen(path, "r");
+    if (!fptr)
+    {
+        printf("Error: could not open %s\n", path);
+        return;
+    }
+
+    // alocações iniciais generosas
+    int cap_v = 65536, cap_vt = 65536, cap_vn = 65536, cap_f = 131072;
+
+    obj->positions  = malloc(cap_v  * sizeof(vec3));
+    obj->texcoords  = malloc(cap_vt * sizeof(vec2));
+    obj->normals    = malloc(cap_vn * sizeof(vec3));
+    obj->pos_indices = malloc(cap_f * 3 * sizeof(int));
+    obj->tex_indices = malloc(cap_f * 3 * sizeof(int));
+    obj->nor_indices = malloc(cap_f * 3 * sizeof(int));
+
+    obj->position_count = 0;
+    obj->texcoord_count = 0;
+    obj->normal_count   = 0;
+    obj->face_count     = 0;
+
+    char buffer[512];
+
+    while (fgets(buffer, sizeof(buffer), fptr))
+    {
+        if (strncmp(buffer, "vn ", 3) == 0)
+        {
+            vec3 n;
+            if (sscanf(buffer + 3, "%f %f %f", &n.x, &n.y, &n.z) == 3)
+                obj->normals[obj->normal_count++] = n;
+        }
+        else if (strncmp(buffer, "vt ", 3) == 0)
+        {
+            vec2 t;
+            if (sscanf(buffer + 3, "%f %f", &t.x, &t.y) == 2)
+                obj->texcoords[obj->texcoord_count++] = t;
+        }
+        else if (strncmp(buffer, "v ", 2) == 0)
+        {
+            vec3 v;
+            if (sscanf(buffer + 2, "%f %f %f", &v.x, &v.y, &v.z) == 3)
+                obj->positions[obj->position_count++] = v;
+        }
+        else if (strncmp(buffer, "f ", 2) == 0)
+        {
+            int pi[3], ti[3], ni[3];
+
+            // tenta "f v/vt/vn v/vt/vn v/vt/vn"
+            int r = sscanf(buffer + 2,
+                "%d/%d/%d %d/%d/%d %d/%d/%d",
+                &pi[0], &ti[0], &ni[0],
+                &pi[1], &ti[1], &ni[1],
+                &pi[2], &ti[2], &ni[2]);
+
+            if (r != 9)
+            {
+                // tenta "f v//vn v//vn v//vn" (sem texcoord)
+                r = sscanf(buffer + 2,
+                    "%d//%d %d//%d %d//%d",
+                    &pi[0], &ni[0],
+                    &pi[1], &ni[1],
+                    &pi[2], &ni[2]);
+
+                ti[0] = ti[1] = ti[2] = 1;
+                if (r != 6) continue;
+            }
+
+            int base = obj->face_count * 3;
+            for (int i = 0; i < 3; i++)
+            {
+                obj->pos_indices[base + i] = pi[i] - 1;
+                obj->tex_indices[base + i] = ti[i] - 1;
+                obj->nor_indices[base + i] = ni[i] - 1;
+            }
+            obj->face_count++;
+        }
+    }
+
+    fclose(fptr);
+    printf("load_obj: %d verts, %d texcoords, %d normals, %d faces\n",
+           obj->position_count, obj->texcoord_count,
+           obj->normal_count,   obj->face_count);
+}
+
+void obj_data_free(obj_data_t* obj)
+{
+    free(obj->positions);
+    free(obj->texcoords);
+    free(obj->normals);
+    free(obj->pos_indices);
+    free(obj->tex_indices);
+    free(obj->nor_indices);
+    memset(obj, 0, sizeof(obj_data_t));
+}
+
+// ------------------------------------------------------------------
 // shader
 // ------------------------------------------------------------------
 
@@ -294,11 +444,24 @@ static void set_uniform_int_array(GLuint prog, const char* name,
 {
     glUniform1iv(uniform_loc(prog, name), count, values);
 }
+static void set_uniform_float_array(GLuint prog, const char* name,
+                                  float* values, int count)
+{
+    glUniform1fv(uniform_loc(prog, name), count, values);
+}
+static void set_uniform_vec3(GLuint prog, const char* name, vec3 v)
+{
+    glUniform3f(uniform_loc(prog, name), v.x, v.y, v.z);
+}
 
 static char* read_file(const char* path)
 {
     FILE* f = fopen(path, "rb");
-    if (!f) { printf("ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: %s\n", path); return NULL; }
+    if (!f)
+    {
+        printf("ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: %s\n", path);
+        return NULL;
+    }
     fseek(f, 0, SEEK_END);
     long size = ftell(f);
     rewind(f);
@@ -321,7 +484,8 @@ static shader_t compile_shader(const char* vs, const char* fs)
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(vertex, 512, NULL, info_log); printf("ERROR::VERTEX\n%s\n", info_log);
+        glGetShaderInfoLog(vertex, 512, NULL, info_log);
+        printf("ERROR::VERTEX\n%s\n", info_log);
     }
 
     unsigned int fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -330,7 +494,8 @@ static shader_t compile_shader(const char* vs, const char* fs)
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(fragment, 512, NULL, info_log); printf("ERROR::FRAGMENT\n%s\n", info_log);
+        glGetShaderInfoLog(fragment, 512, NULL, info_log);
+        printf("ERROR::FRAGMENT\n%s\n", info_log);
     }
 
     shader.id = glCreateProgram();
@@ -340,7 +505,8 @@ static shader_t compile_shader(const char* vs, const char* fs)
     glGetProgramiv(shader.id, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(shader.id, 512, NULL, info_log); printf("ERROR::LINKING\n%s\n", info_log);
+        glGetProgramInfoLog(shader.id, 512, NULL, info_log);
+        printf("ERROR::LINKING\n%s\n", info_log);
     }
 
     glDeleteShader(vertex);
@@ -352,7 +518,12 @@ shader_t shader_create(const char* vertex_path, const char* fragment_path)
 {
     char* vs = read_file(vertex_path);
     char* fs = read_file(fragment_path);
-    if (!vs || !fs) { free(vs); free(fs); return (shader_t){0}; }
+    if (!vs || !fs)
+    {
+        free(vs);
+        free(fs);
+        return (shader_t){0};
+    }
     shader_t s = compile_shader(vs, fs);
     free(vs); free(fs);
     return s;
@@ -383,6 +554,10 @@ void shader_set_int_array(shader_t* s, const char* name, int* values, unsigned i
 {
     glUniform1iv(get_uniform_location(s->id, name), count, values);
 }
+void shader_set_float_array(shader_t* s, const char* name, float* values, unsigned int count)
+{
+    glUniform1fv(get_uniform_location(s->id, name), count, values);
+}
 void shader_set_mat4(shader_t* s, const char* name, mat4* mat)
 {
     glUniformMatrix4fv(get_uniform_location(s->id, name), 1, GL_FALSE, mat->m);
@@ -397,6 +572,7 @@ typedef struct
     vec3  position;
     vec4  color;
     vec2  tex_coord;
+    vec3  normal;
     float tex_index;
 } vertex3d_t;
 
@@ -414,8 +590,10 @@ static void setup_vertex_attribs()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex3d_t), (const void*)offsetof(vertex3d_t, tex_coord));
     glEnableVertexAttribArray(2);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(vertex3d_t), (const void*)offsetof(vertex3d_t, tex_index));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(vertex3d_t), (const void*)offsetof(vertex3d_t, normal));
     glEnableVertexAttribArray(3);
+    glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(vertex3d_t), (const void*)offsetof(vertex3d_t, tex_index));
+    glEnableVertexAttribArray(4);
 }
 
 mesh_t mesh_create(vertex3d_t* vertices, uint32_t vertex_count,
@@ -453,6 +631,64 @@ void mesh_draw(mesh_t* mesh)
     glDrawElements(GL_TRIANGLES, mesh->index_count, GL_UNSIGNED_INT, NULL);
     glBindVertexArray(0);
 }
+
+// ------------------------------------------------------------------
+// textures
+// ------------------------------------------------------------------
+
+typedef struct
+{
+    GLuint id;
+    int width, height;
+} texture_t;
+
+texture_t texture_load(const char* path)
+{
+    texture_t tex = {0};
+
+    stbi_set_flip_vertically_on_load(1);
+
+    int channels;
+    unsigned char* data = stbi_load(path, &tex.width, &tex.height, &channels, 4);
+
+    if (!data)
+    {
+        printf("Erro ao carregar textura: %s\n", path);
+        return tex;
+    }
+
+    glGenTextures(1, &tex.id);
+    glBindTexture(GL_TEXTURE_2D, tex.id);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width, tex.height,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(data);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    printf("Textura carregada: %s (%dx%d)\n", path, tex.width, tex.height);
+    return tex;
+}
+
+void texture_destroy(texture_t* tex)
+{
+    glDeleteTextures(1, &tex->id);
+    tex->id = 0;
+}
+
+void texture_bind(texture_t* tex, int slot)
+{
+    glActiveTexture(GL_TEXTURE0 + slot);
+    glBindTexture(GL_TEXTURE_2D, tex->id);
+}
+
 
 // ------------------------------------------------------------------
 // renderer3d
@@ -558,13 +794,11 @@ void renderer3d_begin_batch(renderer3d_t* r, GLuint shader_id,
     set_uniform_mat4(shader_id, "u_view",       view);
     set_uniform_mat4(shader_id, "u_projection", projection);
 
+    
+
     // FIX: seta u_model como identidade — transform já está nos vértices
     mat4 identity = mat4_identity();
     set_uniform_mat4(shader_id, "u_model", &identity);
-
-    int samplers[MAX_TEXTURES];
-    for (int i = 0; i < MAX_TEXTURES; i++) samplers[i] = i;
-    set_uniform_int_array(shader_id, "u_textures", samplers, MAX_TEXTURES);
 }
 
 void renderer3d_end_batch(renderer3d_t* r)
@@ -579,8 +813,12 @@ void renderer3d_end_batch(renderer3d_t* r)
 }
 
 void renderer3d_draw_quad(renderer3d_t* r,
-                           vec3 position, vec3 rotation, vec2 size,
-                           GLuint texture_id, vec4 color)
+                          vec3 position,
+                          vec3 rotation,
+                          vec2 size,
+                          vec3 normal,
+                          GLuint texture_id,
+                          vec4 color)
 {
     // FIX: usa cache ao invés de passar NULL no overflow
     if (r->index_count >= MAX_INDICES)
@@ -627,6 +865,7 @@ void renderer3d_draw_quad(renderer3d_t* r,
         r->vertex_buffer_ptr->position  = transform_vec4(transform, r->quad_vertex_positions[i]);
         r->vertex_buffer_ptr->color     = color;
         r->vertex_buffer_ptr->tex_coord = tex_coords[i];
+        r->vertex_buffer_ptr->normal = normal;
         r->vertex_buffer_ptr->tex_index = tex_index;
         r->vertex_buffer_ptr++;
     }
@@ -635,17 +874,26 @@ void renderer3d_draw_quad(renderer3d_t* r,
 }
 
 void renderer3d_draw_mesh(mesh_t* mesh, GLuint shader_id, mat4* model,
-                           mat4* view, mat4* projection)
+                           mat4* view, mat4* projection,
+                           texture_t* texture)
 {
     glUseProgram(shader_id);
     set_uniform_mat4(shader_id, "u_model",      model);
     set_uniform_mat4(shader_id, "u_view",       view);
     set_uniform_mat4(shader_id, "u_projection", projection);
+    set_uniform_vec3(shader_id, "u_light_pos",   MAIN_LIGHT_POS);
+    set_uniform_vec3(shader_id, "u_light_color", MAIN_LIGHT_COLOR);
 
-    // textura slot 0 ativa para meshes
-    int samplers[MAX_TEXTURES];
-    for (int i = 0; i < MAX_TEXTURES; i++) samplers[i] = i;
-    set_uniform_int_array(shader_id, "u_textures", samplers, MAX_TEXTURES);
+    if (texture && texture->id != 0)
+    {
+        texture_bind(texture, 0);
+        glUniform1i(uniform_loc(shader_id, "u_texture"),     0);
+        glUniform1i(uniform_loc(shader_id, "u_use_texture"), 1);
+    }
+    else
+    {
+        glUniform1i(uniform_loc(shader_id, "u_use_texture"), 0);
+    }
 
     mesh_draw(mesh);
 }
@@ -653,6 +901,31 @@ void renderer3d_draw_mesh(mesh_t* mesh, GLuint shader_id, mat4* model,
 // ------------------------------------------------------------------
 // vec3
 // ------------------------------------------------------------------
+
+vec3 vec3_zero()
+{
+    return (vec3){ 0.0, 0.0, 0.0 };
+}
+
+vec3 vec3_right()
+{
+    return (vec3){ 1.0, 0.0, 0.0 };
+}
+
+vec3 vec3_up()
+{
+    return (vec3){ 0.0, 1.0, 0.0 };
+}
+
+vec3 vec3_forward()
+{
+    return (vec3){ 0.0, 0.0, 1.0 };
+}
+
+vec3 vec3_one()
+{
+    return (vec3){ 1.0, 1.0, 1.0 };
+}
 
 vec3 vec3_add(vec3* a, vec3* b)
 {
@@ -722,19 +995,64 @@ mat4 mat4_translate(mat4* mat, vec3* vec)
 // FIX: implementado (antes retornava UB)
 mat4 mat4_rotate(mat4* mat, vec3* axis, float angle)
 {
-    float x = axis->x, y = axis->y, z = axis->z;
+    float x = axis->x,
+          y = axis->y,
+          z = axis->z;
+    
     float len = sqrtf(x*x + y*y + z*z);
-    x /= len; y /= len; z /= len;
+    x /= len;
+    y /= len;
+    z /= len;
 
-    float c = cosf(angle), s = sinf(angle), t = 1.0f - c;
+    float c = cosf(angle),
+          s = sinf(angle),
+          t = 1.0f - c;
 
     float r[16];
     mat4_identity_raw(r);
-    r[0]  = t*x*x + c;   r[4]  = t*x*y - s*z; r[8]  = t*x*z + s*y;
-    r[1]  = t*x*y + s*z; r[5]  = t*y*y + c;   r[9]  = t*y*z - s*x;
-    r[2]  = t*x*z - s*y; r[6]  = t*y*z + s*x; r[10] = t*z*z + c;
 
-    mat4 rot = {0}; memcpy(rot.m, r, 64);
+    r[0]  = t*x*x + c;
+    r[4]  = t*x*y - s*z;
+    r[8]  = t*x*z + s*y;
+    r[1]  = t*x*y + s*z;
+    r[5]  = t*y*y + c;
+    r[9]  = t*y*z - s*x;
+    r[2]  = t*x*z - s*y;
+    r[6]  = t*y*z + s*x;
+    r[10] = t*z*z + c;
+
+    mat4 rot = {0};
+    memcpy(rot.m, r, 64);
+    return mat4_multiply(mat, &rot);
+}
+
+mat4 mat4_rotate_x(mat4* mat, float angle)
+{
+    mat4 rot = mat4_identity();
+    rot.m[5] =  cosf(angle);
+    rot.m[6] =  sinf(angle);
+    rot.m[9] = -sinf(angle);
+    rot.m[10] =  cosf(angle);
+    return mat4_multiply(mat, &rot);
+}
+
+mat4 mat4_rotate_y(mat4* mat, float angle)
+{
+    mat4 rot = mat4_identity();
+    rot.m[0] =  cosf(angle);
+    rot.m[2] = -sinf(angle);
+    rot.m[8] =  sinf(angle);
+    rot.m[10] =  cosf(angle);
+    return mat4_multiply(mat, &rot);
+}
+
+mat4 mat4_rotate_z(mat4* mat, float angle)
+{
+    mat4 rot = mat4_identity();
+    rot.m[0] =  cosf(angle);
+    rot.m[1] =  sinf(angle);
+    rot.m[4] = -sinf(angle);
+    rot.m[5] =  cosf(angle);
     return mat4_multiply(mat, &rot);
 }
 
@@ -873,6 +1191,128 @@ vec3 camera_get_right(camera* cam)
 }
 
 // ------------------------------------------------------------------
+// game objects
+// ------------------------------------------------------------------
+
+typedef struct
+{
+    vec3 position;
+    vec3 rotation;
+    vec3 scale;
+} transform_t;
+
+transform_t transform_identity()
+{
+    transform_t transform;
+    transform.position = vec3_zero();
+    transform.rotation = vec3_zero();
+    transform.scale    = vec3_one();
+    return transform;
+}
+
+typedef struct
+{
+    transform_t transform;
+    vec3        speed;
+    mesh_t*     mesh;
+    texture_t*  texture;
+} game_object_t;
+
+game_object_t game_object_create()
+{
+    game_object_t object;
+    object.transform = transform_identity();
+    object.speed = vec3_zero();
+    return object;
+}
+
+void game_object_update(game_object_t* object, float dt)
+{
+    vec3 delta = vec3_multiply_scalar(&object->speed, dt);
+    object->transform.position = vec3_add(
+        &object->transform.position,
+        &delta
+    );
+}
+
+
+
+// ------------------------------------------------------------------
+// game world
+// ------------------------------------------------------------------
+
+#define MAX_GAME_OBJECTS 1024
+
+typedef struct
+{
+    game_object_t objects[MAX_GAME_OBJECTS];
+    bool          active[MAX_GAME_OBJECTS];
+    int           count;
+} game_world_t;
+
+void game_world_init(game_world_t* world)
+{
+    memset(world, 0, sizeof(game_world_t));
+}
+
+// retorna -1 se lotado
+int game_world_add(game_world_t* world, game_object_t object)
+{
+    for (int i = 0; i < MAX_GAME_OBJECTS; i++)
+    {
+        if (!world->active[i])
+        {
+            world->objects[i] = object;
+            world->active[i]  = true;
+            world->count++;
+            return i;
+        }
+    }
+    printf("game_world: sem slots disponíveis\n");
+    return -1;
+}
+
+void game_world_remove(game_world_t* world, int index)
+{
+    if (index < 0 || index >= MAX_GAME_OBJECTS)
+        return;
+    
+    if (!world->active[index])
+        return;
+
+    world->active[index] = false;
+    world->count--;
+}
+
+void game_world_update(game_world_t* world, float dt)
+{
+    for (int i = 0; i < MAX_GAME_OBJECTS; i++)
+    {
+        if (!world->active[i]) continue;
+        game_object_update(&world->objects[i], dt);
+    }
+}
+
+void game_world_render(game_world_t* world, GLuint shader,
+                       mat4* view, mat4* projection)
+{
+    for (int i = 0; i < MAX_GAME_OBJECTS; i++)
+    {
+        if (!world->active[i]) continue;
+        game_object_t* obj = &world->objects[i];
+        if (!obj->mesh) continue;
+
+        mat4 model = mat4_identity();
+        model = mat4_translate(&model, &obj->transform.position);
+        model = mat4_rotate_y(&model,   obj->transform.rotation.y);
+        model = mat4_scale   (&model,  &obj->transform.scale);
+
+        renderer3d_draw_mesh(obj->mesh, shader, &model,
+                             view, projection, obj->texture);
+    }
+}
+
+// ------------------------------------------------------------------
 // callbacks
 // ------------------------------------------------------------------
 
@@ -889,33 +1329,33 @@ const int   WINDOW_WIDTH  = 1366;
 const int   WINDOW_HEIGHT = 768;
 const char* WINDOW_TITLE  = "Game FOG";
 
-
-
-void mesh_draw_lines(mesh_t* mesh)
-{
-    glBindVertexArray(mesh->vao);
-    glDrawElements(GL_LINES, mesh->index_count, GL_UNSIGNED_INT, NULL);
-    glBindVertexArray(0);
-}
-
-#define GRID_SIZE 10
-#define GRID_SPACING 1.0f
-
 int main()
 {
-    if (!glfwInit()) { printf("Erro ao inicializar GLFW\n"); return -1; }
+    if (!glfwInit())
+    {
+        printf("Erro ao inicializar GLFW\n");
+        return -1;
+    }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE, NULL, NULL);
-    if (!window) { printf("Erro ao criar janela\n"); glfwTerminate(); return -1; }
+    if (!window)
+    {
+        printf("Erro ao criar janela\n");
+        glfwTerminate();
+        return -1;
+    }
 
     glfwMakeContextCurrent(window);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    { printf("Erro ao inicializar GLAD\n"); return -1; }
+    {
+        printf("Erro ao inicializar GLAD\n");
+        return -1;
+    }
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -929,66 +1369,62 @@ int main()
 
     shader_t shader = shader_create_from_src(vertex_src, fragment_src);
 
-    vertex3d_t cube_verts[] = {
-        {{ -0.5f, -0.5f,  0.5f }, { 1,0,0,1 }, { 0,0 }, 0},
-        {{  0.5f, -0.5f,  0.5f }, { 1,0,0,1 }, { 1,0 }, 0},
-        {{  0.5f,  0.5f,  0.5f }, { 1,0,0,1 }, { 1,1 }, 0},
-        {{ -0.5f,  0.5f,  0.5f }, { 1,0,0,1 }, { 0,1 }, 0},
-        {{ -0.5f, -0.5f, -0.5f }, { 0,1,0,1 }, { 0,0 }, 0},
-        {{  0.5f, -0.5f, -0.5f }, { 0,1,0,1 }, { 1,0 }, 0},
-        {{  0.5f,  0.5f, -0.5f }, { 0,1,0,1 }, { 1,1 }, 0},
-        {{ -0.5f,  0.5f, -0.5f }, { 0,1,0,1 }, { 0,1 }, 0},
-    };
-
-    uint32_t cube_indices[] = {
-        0,1,2, 2,3,0,
-        4,5,6, 6,7,4,
-        0,4,7, 7,3,0,
-        1,5,6, 6,2,1,
-        3,2,6, 6,7,3,
-        0,1,5, 5,4,0
-    };
-
-    mesh_t cube = mesh_create(cube_verts, 8, cube_indices, 36);
-
-    vertex3d_t grid_vertices[(GRID_SIZE * 2 + 1) * 4];
-    uint32_t grid_indices[(GRID_SIZE * 2 + 1) * 4];
-
-    int v = 0;
-    int i = 0;
-
-    for (int x = -GRID_SIZE; x <= GRID_SIZE; x++)
+    vertex3d_t cube_verts[] =
     {
-        // linha paralela ao eixo Z
-        grid_vertices[v++] = (vertex3d_t){ {x, 0, -GRID_SIZE}, {1,1,1,1}, {0,0}, 0 };
-        grid_vertices[v++] = (vertex3d_t){ {x, 0,  GRID_SIZE}, {1,1,1,1}, {0,0}, 0 };
+        // Frente (+Z)
+        {{-0.5,-0.5, 0.5}, {1,0,0,1}, {0,0}, {0,0,1}, 0},
+        {{ 0.5,-0.5, 0.5}, {1,0,0,1}, {1,0}, {0,0,1}, 0},
+        {{ 0.5, 0.5, 0.5}, {1,0,0,1}, {1,1}, {0,0,1}, 0},
+        {{-0.5, 0.5, 0.5}, {1,0,0,1}, {0,1}, {0,0,1}, 0},
 
-        grid_indices[i++] = v - 2;
-        grid_indices[i++] = v - 1;
+        // Trás (-Z)
+        {{-0.5,-0.5,-0.5}, {1,0,0,1}, {0,0}, {0,0,-1}, 0},
+        {{ 0.5,-0.5,-0.5}, {1,0,0,1}, {1,0}, {0,0,-1}, 0},
+        {{ 0.5, 0.5,-0.5}, {1,0,0,1}, {1,1}, {0,0,-1}, 0},
+        {{-0.5, 0.5,-0.5}, {1,0,0,1}, {0,1}, {0,0,-1}, 0},
 
-        // linha paralela ao eixo X
-        grid_vertices[v++] = (vertex3d_t){ {-GRID_SIZE, 0, x}, {1,1,1,1}, {0,0}, 0 };
-        grid_vertices[v++] = (vertex3d_t){ { GRID_SIZE, 0, x}, {1,1,1,1}, {0,0}, 0 };
+        // Esquerda (-X)
+        {{-0.5,-0.5,-0.5}, {1,0,0,1}, {0,0}, {-1,0,0}, 0},
+        {{-0.5,-0.5, 0.5}, {1,0,0,1}, {1,0}, {-1,0,0}, 0},
+        {{-0.5, 0.5, 0.5}, {1,0,0,1}, {1,1}, {-1,0,0}, 0},
+        {{-0.5, 0.5,-0.5}, {1,0,0,1}, {0,1}, {-1,0,0}, 0},
 
-        grid_indices[i++] = v - 2;
-        grid_indices[i++] = v - 1;
-    }
-    mesh_t grid = mesh_create(grid_vertices, v, grid_indices, i);
-    glLineWidth(10.0);
+        // Direita (+X)
+        {{ 0.5,-0.5,-0.5}, {1,0,0,1}, {0,0}, {1,0,0}, 0},
+        {{ 0.5,-0.5, 0.5}, {1,0,0,1}, {1,0}, {1,0,0}, 0},
+        {{ 0.5, 0.5, 0.5}, {1,0,0,1}, {1,1}, {1,0,0}, 0},
+        {{ 0.5, 0.5,-0.5}, {1,0,0,1}, {0,1}, {1,0,0}, 0},
+
+        // Baixo (-Y)
+        {{-0.5,-0.5,-0.5}, {1,0,0,1}, {0,0}, {0,-1,0}, 0},
+        {{ 0.5,-0.5,-0.5}, {1,0,0,1}, {1,0}, {0,-1,0}, 0},
+        {{ 0.5,-0.5, 0.5}, {1,0,0,1}, {1,1}, {0,-1,0}, 0},
+        {{-0.5,-0.5, 0.5}, {1,0,0,1}, {0,1}, {0,-1,0}, 0},
+
+        // Cima (+Y)
+        {{-0.5, 0.5,-0.5}, {1,0,0,1}, {0,0}, {0,1,0}, 0},
+        {{ 0.5, 0.5,-0.5}, {1,0,0,1}, {1,0}, {0,1,0}, 0},
+        {{ 0.5, 0.5, 0.5}, {1,0,0,1}, {1,1}, {0,1,0}, 0},
+        {{-0.5, 0.5, 0.5}, {1,0,0,1}, {0,1}, {0,1,0}, 0},
+    };
+
+    uint32_t cube_indices[] =
+    {
+        0,1,2,   2,3,0,     // Frente    (verts 0-3)
+        4,5,6,   6,7,4,     // Trás      (verts 4-7)
+        8,9,10,  10,11,8,   // Esquerda  (verts 8-11)
+        12,13,14, 14,15,12, // Direita   (verts 12-15)
+        16,17,18, 18,19,16, // Baixo     (verts 16-19)
+        20,21,22, 22,23,20  // Cima      (verts 20-23)
+    };
+
+    mesh_t cube = mesh_create(cube_verts, 24, cube_indices, 36);
 
     renderer3d_t renderer;
     renderer3d_init(&renderer);
 
     mat4 projection = mat4_perspective(PI / 3.0f, (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
     mat4 view = (mat4){0};
-
-    GLuint white_tex;
-    unsigned char white[] = { 255, 255, 255, 255 };
-    glGenTextures(1, &white_tex);
-    glBindTexture(GL_TEXTURE_2D, white_tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, white);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     float cube_angle = 0.0f;
 
@@ -1006,6 +1442,47 @@ int main()
     camera.speed = 5.0f;
     camera.sensitivity = 0.002f;
 
+    obj_data_t cow_data = {0};
+    load_obj("cow.obj", &cow_data);
+
+    int total_verts = cow_data.face_count * 3;
+
+    vertex3d_t* cow_verts  = malloc(total_verts * sizeof(vertex3d_t));
+    uint32_t*   cow_idx    = malloc(total_verts * sizeof(uint32_t));
+
+    for (int i = 0; i < total_verts; i++)
+    {
+        int pi = cow_data.pos_indices[i];
+        int ti = cow_data.tex_indices[i];
+        int ni = cow_data.nor_indices[i];
+
+        cow_verts[i].position  = cow_data.positions[pi];
+        cow_verts[i].tex_coord = cow_data.texcoords[ti];
+        cow_verts[i].normal    = cow_data.normals[ni];
+        cow_verts[i].color     = (vec4){1.0f, 0.8f, 0.6f, 1.0f};
+        cow_verts[i].tex_index = 0.0f;
+
+        cow_idx[i] = (uint32_t)i; // cada vértice é único
+    }
+
+    mesh_t cow = mesh_create(cow_verts, total_verts, cow_idx, total_verts);
+
+    free(cow_verts);
+    free(cow_idx);
+    obj_data_free(&cow_data);
+
+    texture_t color_map_texture = texture_load("colormap.png");
+
+    game_world_t world;
+    game_world_init(&world);
+
+    // cria uma vaca
+    game_object_t object = game_object_create();
+    object.mesh    = &cow;
+    object.texture = &color_map_texture;
+    int object_id = game_world_add(&world, object);
+
+    world.objects[object_id].speed = (vec3){ 1.0f, 0.0f, 0.0f };
 
     while (!glfwWindowShouldClose(window))
     {
@@ -1015,6 +1492,10 @@ int main()
         if (input_get_key(GLFW_KEY_ESCAPE))
             glfwSetWindowShouldClose(window, 1);
 
+        world.objects[object_id].transform.rotation.y = cube_angle;
+        world.objects[object_id].speed = (vec3){ sinf(time_total()), 0.0, 0.0 };
+        game_world_update(&world, time_delta());
+        
         cube_angle += 1.0f * time_delta();
 
         vec3 forward = camera_get_forward(&camera);
@@ -1094,37 +1575,29 @@ int main()
                 camera.position = vec3_add(&camera.position, &(vec3){0.0, velocity, 0.0});
         }
         
-        vec3 siner = (vec3){0.0, sinf(time_total()) * 0.2, 0.0};
-        vec3 total_position = vec3_add(&camera.position, &siner);
-        vec3 target = vec3_add(&total_position, &forward);
+        vec3 target = vec3_add(&camera.position, &forward);
 
-        view = mat4_look_at(total_position, target, CAMERA_UP);
+        view = mat4_look_at(camera.position, target, CAMERA_UP);
 
         glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // cubo girando em Y
-        float model[16];
-        mat4_identity_raw(model);
-        model[0]  =  cosf(cube_angle);
-        model[8]  =  sinf(cube_angle);
-        model[2]  = -sinf(cube_angle);
-        model[10] =  cosf(cube_angle);
-        mat4 model_mat = {0}; memcpy(model_mat.m, model, 64);
-
-        renderer3d_draw_mesh(&cube, shader.id, &model_mat, &view, &projection);
+        mat4 model = mat4_identity();
         
         
+        model = mat4_translate(&model, &(vec3){ 0.0, 1.0, 0.0 });
         glUseProgram(shader.id);
+
+        //  renderer3d_draw_mesh(&cube, shader.id, &model, &view, &projection);
+
+        game_world_render(&world, shader.id, &view, &projection);
 
         mat4 identity = mat4_identity();
 
         shader_set_mat4(&shader, "u_model", &identity);
         shader_set_mat4(&shader, "u_view", &view);
         shader_set_mat4(&shader, "u_projection", &projection);
-
-        mesh_draw_lines(&grid);
-
 
         renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
 
@@ -1135,9 +1608,13 @@ int main()
         glfwPollEvents();
     }
 
+    texture_destroy(&color_map_texture);
     mesh_destroy(&cube);
+    mesh_destroy(&cow);
+
+    game_world_remove(&world, object_id);
     renderer3d_destroy(&renderer);
-    glDeleteTextures(1, &white_tex);
+    
     glfwTerminate();
     return 0;
 }
