@@ -25,22 +25,19 @@ const char* vertex_src =
     "uniform mat4 u_model;\n"
     "uniform mat4 u_view;\n"
     "uniform mat4 u_projection;\n"
-    
+
     "out vec4 v_color;\n"
     "out vec2 v_tex_coord;\n"
     "out vec3 v_normal;\n"
     "out vec3 v_frag_pos;\n"
     "out float v_tex_index;\n"
-    
+
     "void main()\n"
     "{\n"
     "    vec4 world_pos = u_model * vec4(a_position, 1.0);\n"
     "    gl_Position = u_projection * u_view * world_pos;\n"
-
-    "    v_frag_pos = world_pos.xyz;\n"
-
-    "    v_normal = mat3(transpose(inverse(u_model))) * a_normal;\n"
-
+    "    v_frag_pos  = world_pos.xyz;\n"
+    "    v_normal    = mat3(transpose(inverse(u_model))) * a_normal;\n"
     "    v_color     = a_color;\n"
     "    v_tex_coord = a_tex_coord;\n"
     "    v_tex_index = a_tex_index;\n"
@@ -63,13 +60,13 @@ const char* fragment_src =
 
     "void main()\n"
     "{\n"
-    "    float ambient_strength = 0.1;\n"
+    "    float ambient_strength = 0.25;\n"
     "    vec3  ambient = ambient_strength * u_light_color;\n"
 
-    "    vec3 norm = normalize(v_normal);\n"
+    "    vec3 norm      = normalize(v_normal);\n"
     "    vec3 light_dir = normalize(u_light_pos - v_frag_pos);\n"
-    "    float diff = max(dot(norm, light_dir), 0.0);\n"
-    "    vec3 diffuse = diff * u_light_color;\n"
+    "    float diff     = max(dot(norm, light_dir), 0.0);\n"
+    "    vec3 diffuse   = diff * u_light_color;\n"
 
     "    vec4 base_color;\n"
     "    if (u_use_texture == 1)\n"
@@ -77,49 +74,48 @@ const char* fragment_src =
     "    else\n"
     "        base_color = v_color;\n"
 
-    "    vec3 final_color = base_color.rgb * (diffuse + ambient);\n"
+    "    vec3 final_color = base_color.rgb * (ambient + diffuse);\n"
     "    frag_color = vec4(final_color, base_color.a);\n"
     "}\n";
-
 
 // ------------------------------------------------------------------
 // tipos
 // ------------------------------------------------------------------
 
-typedef struct { float x, y, z;       } vec3;
-typedef struct { float x, y, z, w;    } vec4;
-typedef struct { float x, y;          } vec2;
-typedef struct { float m[16];         } mat4;
+typedef struct { float x, y, z;    } vec3;
+typedef struct { float x, y, z, w; } vec4;
+typedef struct { float x, y;       } vec2;
+typedef struct { float m[16];      } mat4;
 
 // ------------------------------------------------------------------
-// declarações
+// constantes globais
 // ------------------------------------------------------------------
 
-const vec3 MAIN_LIGHT_POS = (vec3){ 10.0, 10.0, 0.0 };
-const vec3 MAIN_LIGHT_COLOR = (vec3){ 1.0, 1.0, 1.0 };
+const vec3 MAIN_LIGHT_POS   = (vec3){ 0.0f, 20.0f, -5.0f };
+const vec3 MAIN_LIGHT_COLOR = (vec3){ 1.0f,  1.0f,  1.0f };
+
+// ------------------------------------------------------------------
+// declarações forward
+// ------------------------------------------------------------------
 
 vec3  vec3_zero();
-vec3  vec3_right();
-vec3  vec3_up();
-vec3  vec3_forward();
 vec3  vec3_one();
 vec3  vec3_add(vec3* a, vec3* b);
 vec3  vec3_subtract(vec3* a, vec3* b);
+vec3  vec3_multiply_scalar(vec3* v, float s);
 vec3  vec3_cross(vec3* a, vec3* b);
 float vec3_dot(vec3* a, vec3* b);
+vec3  vec3_lerp(vec3* a, vec3* b, float t);
+float lerp(float a, float b, float t);
 
 mat4 mat4_identity();
 mat4 mat4_multiply(mat4* a, mat4* b);
 mat4 mat4_translate(mat4* mat, vec3* vec);
-mat4 mat4_rotate(mat4* mat, vec3* axis, float angle);
 mat4 mat4_rotate_x(mat4* mat, float angle);
 mat4 mat4_rotate_y(mat4* mat, float angle);
 mat4 mat4_rotate_z(mat4* mat, float angle);
 mat4 mat4_scale(mat4* mat, vec3* vec);
-void mat4_print(mat4* mat);
-mat4 mat4_perspective(float fov, float aspect,
-                              float near, float far);
-
+mat4 mat4_perspective(float fov, float aspect, float near, float far);
 mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up);
 
 // ------------------------------------------------------------------
@@ -132,14 +128,13 @@ static void mat4_identity_raw(float out[16])
     out[0] = out[5] = out[10] = out[15] = 1.0f;
 }
 
-// FIX: corrigido para column-major (j*4+i ao invés de i*4+j)
 static void mat4_mul_raw(float out[16], float a[16], float b[16])
 {
     float tmp[16] = {0};
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             for (int k = 0; k < 4; k++)
-                tmp[j * 4 + i] += a[k * 4 + i] * b[j * 4 + k];
+                tmp[j*4+i] += a[k*4+i] * b[j*4+k];
     memcpy(out, tmp, 16 * sizeof(float));
 }
 
@@ -162,31 +157,28 @@ static void build_scale(float out[16], float sx, float sy, float sz)
 static void build_rotate_x(float out[16], float a)
 {
     mat4_identity_raw(out);
-    out[5]  =  cosf(a);
-    out[9]  = -sinf(a);
-    out[6]  =  sinf(a);
-    out[10] =  cosf(a);
+    out[5]  =  cosf(a); out[9]  = -sinf(a);
+    out[6]  =  sinf(a); out[10] =  cosf(a);
 }
 
 static void build_rotate_y(float out[16], float a)
 {
     mat4_identity_raw(out);
-    out[0]  =  cosf(a);
-    out[8]  =  sinf(a);
-    out[2]  = -sinf(a);
-    out[10] =  cosf(a);
+    out[0]  =  cosf(a); out[8]  =  sinf(a);
+    out[2]  = -sinf(a); out[10] =  cosf(a);
 }
 
 static void build_rotate_z(float out[16], float a)
 {
     mat4_identity_raw(out);
-    out[0]  =  cosf(a);
-    out[4]  = -sinf(a);
-    out[1]  =  sinf(a);
-    out[5]  =  cosf(a);
+    out[0] =  cosf(a); out[4] = -sinf(a);
+    out[1] =  sinf(a); out[5] =  cosf(a);
 }
 
-static void build_transform(float out[16], vec3 pos, vec3 rot, float sx, float sy)
+static void build_transform_with_normal(float out[16],
+                                        vec3 pos, vec3 rot,
+                                        float sx, float sy,
+                                        vec3 normal_in, vec3* normal_out)
 {
     float t[16], rx[16], ry[16], rz[16], s[16], tmp[16];
     build_translate(t,  pos);
@@ -195,16 +187,27 @@ static void build_transform(float out[16], vec3 pos, vec3 rot, float sx, float s
     build_rotate_z (rz, rot.z);
     build_scale    (s,  sx, sy, 1.0f);
 
-    mat4_mul_raw(tmp, rz, ry);
-    mat4_mul_raw(tmp, tmp, rx);
-    mat4_mul_raw(tmp, tmp, s);
-    mat4_mul_raw(out, t,   tmp);
+    float rot_mat[16];
+    mat4_mul_raw(rot_mat, rz, ry);
+    mat4_mul_raw(rot_mat, rot_mat, rx);
+
+    normal_out->x = rot_mat[0]*normal_in.x + rot_mat[4]*normal_in.y + rot_mat[8] *normal_in.z;
+    normal_out->y = rot_mat[1]*normal_in.x + rot_mat[5]*normal_in.y + rot_mat[9] *normal_in.z;
+    normal_out->z = rot_mat[2]*normal_in.x + rot_mat[6]*normal_in.y + rot_mat[10]*normal_in.z;
+
+    // normaliza
+    float len = sqrtf(normal_out->x*normal_out->x +
+                      normal_out->y*normal_out->y +
+                      normal_out->z*normal_out->z);
+    if (len > 0.0001f) { normal_out->x /= len; normal_out->y /= len; normal_out->z /= len; }
+
+    mat4_mul_raw(tmp, rot_mat, s);
+    mat4_mul_raw(out, t, tmp);
 }
 
 static vec3 transform_vec4(float m[16], vec4 v)
 {
-    return (vec3)
-    {
+    return (vec3){
         m[0]*v.x + m[4]*v.y + m[8] *v.z + m[12]*v.w,
         m[1]*v.x + m[5]*v.y + m[9] *v.z + m[13]*v.w,
         m[2]*v.x + m[6]*v.y + m[10]*v.z + m[14]*v.w,
@@ -212,20 +215,14 @@ static vec3 transform_vec4(float m[16], vec4 v)
 }
 
 // ------------------------------------------------------------------
-// camera helpers
-// ------------------------------------------------------------------
-
-
-
-// ------------------------------------------------------------------
 // input
 // ------------------------------------------------------------------
 
 #define MAX_KEYS 512
 
-static GLFWwindow* m_window       = NULL;
-static int         m_current_keys[MAX_KEYS];
-static int         m_previous_keys[MAX_KEYS];
+static GLFWwindow* m_window = NULL;
+static int m_current_keys[MAX_KEYS];
+static int m_previous_keys[MAX_KEYS];
 
 void input_init(GLFWwindow* window)
 {
@@ -248,8 +245,15 @@ int input_get_key(int key)
     return pressed;
 }
 
-int input_get_key_down(int key) { return  m_current_keys[key] && !m_previous_keys[key]; }
-int input_get_key_up(int key)   { return !m_current_keys[key] &&  m_previous_keys[key]; }
+int input_get_key_down(int key)
+{
+    return  m_current_keys[key] && !m_previous_keys[key];
+}
+
+int input_get_key_up(int key)
+{
+    return !m_current_keys[key] &&  m_previous_keys[key];
+}
 
 int input_get_mouse_button(int button)
 {
@@ -271,14 +275,7 @@ static float  delta     = 0.0f;
 void time_init()
 {
     last_time = glfwGetTime();
-    delta     = 0.0f;
-}
-
-void time_update()
-{
-    double now = glfwGetTime();
-    delta      = (float)(now - last_time);
-    last_time  = now;
+    delta = 0.0f;
 }
 
 float time_total()
@@ -291,52 +288,49 @@ float time_delta()
     return delta;
 }
 
+void time_update()
+{
+    double now = glfwGetTime();
+    delta      = (float)(now - last_time);
+    last_time  = now;
+}
+
 // ------------------------------------------------------------------
 // .obj parser
 // ------------------------------------------------------------------
 
 typedef struct
 {
-    vec3* positions;   // lidos dos 'v'
-    vec2* texcoords;   // lidos dos 'vt'
-    vec3* normals;     // lidos dos 'vn'
-
-    int position_count;
-    int texcoord_count;
-    int normal_count;
-
+    vec3* positions;
+    vec2* texcoords;
+    vec3* normals;
+    int position_count, texcoord_count, normal_count;
     int* pos_indices;
     int* tex_indices;
     int* nor_indices;
-    int  face_count;   // número de triângulos
+    int  face_count;
 } obj_data_t;
 
 void load_obj(const char* path, obj_data_t* obj)
 {
     FILE* fptr = fopen(path, "r");
+
     if (!fptr)
     {
         printf("Error: could not open %s\n", path);
         return;
     }
 
-    // alocações iniciais generosas
     int cap_v = 65536, cap_vt = 65536, cap_vn = 65536, cap_f = 131072;
-
-    obj->positions  = malloc(cap_v  * sizeof(vec3));
-    obj->texcoords  = malloc(cap_vt * sizeof(vec2));
-    obj->normals    = malloc(cap_vn * sizeof(vec3));
+    obj->positions   = malloc(cap_v  * sizeof(vec3));
+    obj->texcoords   = malloc(cap_vt * sizeof(vec2));
+    obj->normals     = malloc(cap_vn * sizeof(vec3));
     obj->pos_indices = malloc(cap_f * 3 * sizeof(int));
     obj->tex_indices = malloc(cap_f * 3 * sizeof(int));
     obj->nor_indices = malloc(cap_f * 3 * sizeof(int));
-
-    obj->position_count = 0;
-    obj->texcoord_count = 0;
-    obj->normal_count   = 0;
-    obj->face_count     = 0;
+    obj->position_count = obj->texcoord_count = obj->normal_count = obj->face_count = 0;
 
     char buffer[512];
-
     while (fgets(buffer, sizeof(buffer), fptr))
     {
         if (strncmp(buffer, "vn ", 3) == 0)
@@ -360,42 +354,30 @@ void load_obj(const char* path, obj_data_t* obj)
         else if (strncmp(buffer, "f ", 2) == 0)
         {
             int pi[3], ti[3], ni[3];
-
-            // tenta "f v/vt/vn v/vt/vn v/vt/vn"
             int r = sscanf(buffer + 2,
                 "%d/%d/%d %d/%d/%d %d/%d/%d",
-                &pi[0], &ti[0], &ni[0],
-                &pi[1], &ti[1], &ni[1],
-                &pi[2], &ti[2], &ni[2]);
-
+                &pi[0],&ti[0],&ni[0], &pi[1],&ti[1],&ni[1], &pi[2],&ti[2],&ni[2]);
             if (r != 9)
             {
-                // tenta "f v//vn v//vn v//vn" (sem texcoord)
                 r = sscanf(buffer + 2,
                     "%d//%d %d//%d %d//%d",
-                    &pi[0], &ni[0],
-                    &pi[1], &ni[1],
-                    &pi[2], &ni[2]);
-
+                    &pi[0],&ni[0], &pi[1],&ni[1], &pi[2],&ni[2]);
                 ti[0] = ti[1] = ti[2] = 1;
                 if (r != 6) continue;
             }
-
             int base = obj->face_count * 3;
             for (int i = 0; i < 3; i++)
             {
-                obj->pos_indices[base + i] = pi[i] - 1;
-                obj->tex_indices[base + i] = ti[i] - 1;
-                obj->nor_indices[base + i] = ni[i] - 1;
+                obj->pos_indices[base+i] = pi[i] - 1;
+                obj->tex_indices[base+i] = ti[i] - 1;
+                obj->nor_indices[base+i] = ni[i] - 1;
             }
             obj->face_count++;
         }
     }
-
     fclose(fptr);
     printf("load_obj: %d verts, %d texcoords, %d normals, %d faces\n",
-           obj->position_count, obj->texcoord_count,
-           obj->normal_count,   obj->face_count);
+           obj->position_count, obj->texcoord_count, obj->normal_count, obj->face_count);
 }
 
 void obj_data_free(obj_data_t* obj)
@@ -413,18 +395,7 @@ void obj_data_free(obj_data_t* obj)
 // shader
 // ------------------------------------------------------------------
 
-typedef struct
-{
-    unsigned int id;
-} shader_t;
-
-static GLint get_uniform_location(GLuint program, const char* name)
-{
-    GLint location = glGetUniformLocation(program, name);
-    if (location == -1)
-        printf("Warning: uniform '%s' not found.\n", name);
-    return location;
-}
+typedef struct { unsigned int id; } shader_t;
 
 static GLint uniform_loc(GLuint prog, const char* name)
 {
@@ -439,37 +410,9 @@ static void set_uniform_mat4(GLuint prog, const char* name, mat4* mat)
     glUniformMatrix4fv(uniform_loc(prog, name), 1, GL_FALSE, mat->m);
 }
 
-static void set_uniform_int_array(GLuint prog, const char* name,
-                                  int* values, int count)
-{
-    glUniform1iv(uniform_loc(prog, name), count, values);
-}
-static void set_uniform_float_array(GLuint prog, const char* name,
-                                  float* values, int count)
-{
-    glUniform1fv(uniform_loc(prog, name), count, values);
-}
 static void set_uniform_vec3(GLuint prog, const char* name, vec3 v)
 {
     glUniform3f(uniform_loc(prog, name), v.x, v.y, v.z);
-}
-
-static char* read_file(const char* path)
-{
-    FILE* f = fopen(path, "rb");
-    if (!f)
-    {
-        printf("ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: %s\n", path);
-        return NULL;
-    }
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    rewind(f);
-    char* buf = (char*)malloc(size + 1);
-    fread(buf, 1, size, f);
-    buf[size] = '\0';
-    fclose(f);
-    return buf;
 }
 
 static shader_t compile_shader(const char* vs, const char* fs)
@@ -482,6 +425,7 @@ static shader_t compile_shader(const char* vs, const char* fs)
     glShaderSource(vertex, 1, &vs, NULL);
     glCompileShader(vertex);
     glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
+
     if (!success)
     {
         glGetShaderInfoLog(vertex, 512, NULL, info_log);
@@ -492,6 +436,7 @@ static shader_t compile_shader(const char* vs, const char* fs)
     glShaderSource(fragment, 1, &fs, NULL);
     glCompileShader(fragment);
     glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
+
     if (!success)
     {
         glGetShaderInfoLog(fragment, 512, NULL, info_log);
@@ -503,6 +448,7 @@ static shader_t compile_shader(const char* vs, const char* fs)
     glAttachShader(shader.id, fragment);
     glLinkProgram(shader.id);
     glGetProgramiv(shader.id, GL_LINK_STATUS, &success);
+
     if (!success)
     {
         glGetProgramInfoLog(shader.id, 512, NULL, info_log);
@@ -514,53 +460,9 @@ static shader_t compile_shader(const char* vs, const char* fs)
     return shader;
 }
 
-shader_t shader_create(const char* vertex_path, const char* fragment_path)
-{
-    char* vs = read_file(vertex_path);
-    char* fs = read_file(fragment_path);
-    if (!vs || !fs)
-    {
-        free(vs);
-        free(fs);
-        return (shader_t){0};
-    }
-    shader_t s = compile_shader(vs, fs);
-    free(vs); free(fs);
-    return s;
-}
-
 shader_t shader_create_from_src(const char* vs, const char* fs)
 {
     return compile_shader(vs, fs);
-}
-
-void shader_use(shader_t* shader)
-{
-    glUseProgram(shader->id);
-}
-void shader_set_bool(shader_t* s, const char* name, int value)
-{
-    glUniform1i(get_uniform_location(s->id, name), value);
-}
-void shader_set_int(shader_t* s, const char* name, int value)
-{
-    glUniform1i(get_uniform_location(s->id, name), value);
-}
-void shader_set_float(shader_t* s, const char* name, float value)
-{
-    glUniform1f(get_uniform_location(s->id, name), value);
-}
-void shader_set_int_array(shader_t* s, const char* name, int* values, unsigned int count)
-{
-    glUniform1iv(get_uniform_location(s->id, name), count, values);
-}
-void shader_set_float_array(shader_t* s, const char* name, float* values, unsigned int count)
-{
-    glUniform1fv(get_uniform_location(s->id, name), count, values);
-}
-void shader_set_mat4(shader_t* s, const char* name, mat4* mat)
-{
-    glUniformMatrix4fv(get_uniform_location(s->id, name), 1, GL_FALSE, mat->m);
 }
 
 // ------------------------------------------------------------------
@@ -645,9 +547,7 @@ typedef struct
 texture_t texture_load(const char* path)
 {
     texture_t tex = {0};
-
     stbi_set_flip_vertically_on_load(1);
-
     int channels;
     unsigned char* data = stbi_load(path, &tex.width, &tex.height, &channels, 4);
 
@@ -659,18 +559,15 @@ texture_t texture_load(const char* path)
 
     glGenTextures(1, &tex.id);
     glBindTexture(GL_TEXTURE_2D, tex.id);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width, tex.height,
-                 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width, tex.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(data);
+
     glBindTexture(GL_TEXTURE_2D, 0);
 
     printf("Textura carregada: %s (%dx%d)\n", path, tex.width, tex.height);
@@ -688,7 +585,6 @@ void texture_bind(texture_t* tex, int slot)
     glActiveTexture(GL_TEXTURE0 + slot);
     glBindTexture(GL_TEXTURE_2D, tex->id);
 }
-
 
 // ------------------------------------------------------------------
 // renderer3d
@@ -712,7 +608,6 @@ typedef struct
 
     vec4 quad_vertex_positions[4];
 
-    // FIX: cache para reuso no overflow do batch
     GLuint current_shader;
     mat4   current_view;
     mat4   current_projection;
@@ -740,12 +635,8 @@ void renderer3d_init(renderer3d_t* r)
     uint32_t  offset  = 0;
     for (uint32_t i = 0; i < MAX_INDICES; i += 6)
     {
-        indices[i+0] = offset + 0;
-        indices[i+1] = offset + 1;
-        indices[i+2] = offset + 2;
-        indices[i+3] = offset + 2;
-        indices[i+4] = offset + 3;
-        indices[i+5] = offset + 0;
+        indices[i+0] = offset + 0; indices[i+1] = offset + 1; indices[i+2] = offset + 2;
+        indices[i+3] = offset + 2; indices[i+4] = offset + 3; indices[i+5] = offset + 0;
         offset += 4;
     }
 
@@ -785,28 +676,27 @@ void renderer3d_begin_batch(renderer3d_t* r, GLuint shader_id,
     r->vertex_buffer_ptr  = r->vertex_buffer_base;
     r->texture_slot_index = 1;
 
-    // FIX: cacheia para uso no overflow
     r->current_shader     = shader_id;
     r->current_view       = *view;
     r->current_projection = *projection;
 
     glUseProgram(shader_id);
-    set_uniform_mat4(shader_id, "u_view",       view);
-    set_uniform_mat4(shader_id, "u_projection", projection);
+    set_uniform_mat4(shader_id, "u_view",        view);
+    set_uniform_mat4(shader_id, "u_projection",  projection);
 
-    
+    set_uniform_vec3(shader_id, "u_light_pos",   MAIN_LIGHT_POS);
+    set_uniform_vec3(shader_id, "u_light_color", MAIN_LIGHT_COLOR);
 
-    // FIX: seta u_model como identidade — transform já está nos vértices
     mat4 identity = mat4_identity();
     set_uniform_mat4(shader_id, "u_model", &identity);
+
+    // sem textura por padrão
+    glUniform1i(uniform_loc(shader_id, "u_use_texture"), 0);
 }
 
 void renderer3d_end_batch(renderer3d_t* r)
 {
-    ptrdiff_t size =
-        (uint8_t*)r->vertex_buffer_ptr -
-        (uint8_t*)r->vertex_buffer_base;
-
+    ptrdiff_t size = (uint8_t*)r->vertex_buffer_ptr - (uint8_t*)r->vertex_buffer_base;
     glBindBuffer(GL_ARRAY_BUFFER, r->vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, size, r->vertex_buffer_base);
     renderer3d_flush(r);
@@ -816,27 +706,20 @@ void renderer3d_draw_quad(renderer3d_t* r,
                           vec3 position,
                           vec3 rotation,
                           vec2 size,
-                          vec3 normal,
+                          vec3 normal_local,
                           GLuint texture_id,
                           vec4 color)
 {
-    // FIX: usa cache ao invés de passar NULL no overflow
     if (r->index_count >= MAX_INDICES)
     {
         renderer3d_end_batch(r);
-        renderer3d_begin_batch(r, r->current_shader,
-                               &r->current_view,
-                               &r->current_projection);
+        renderer3d_begin_batch(r, r->current_shader, &r->current_view, &r->current_projection);
     }
 
     float tex_index = 0.0f;
     for (uint32_t i = 1; i < r->texture_slot_index; i++)
     {
-        if (r->texture_slots[i] == texture_id)
-        {
-            tex_index = (float)i;
-            break;
-        }
+        if (r->texture_slots[i] == texture_id) { tex_index = (float)i; break; }
     }
 
     if (tex_index == 0.0f)
@@ -844,20 +727,24 @@ void renderer3d_draw_quad(renderer3d_t* r,
         if (r->texture_slot_index >= MAX_TEXTURES)
         {
             renderer3d_end_batch(r);
-            renderer3d_begin_batch(r, r->current_shader,
-                                   &r->current_view,
-                                   &r->current_projection);
+            renderer3d_begin_batch(r, r->current_shader, &r->current_view, &r->current_projection);
         }
         tex_index = (float)r->texture_slot_index;
         r->texture_slots[r->texture_slot_index++] = texture_id;
     }
 
     float transform[16];
-    build_transform(transform, position, rotation, size.x, size.y);
+    vec3  world_normal;
 
-    vec2 tex_coords[4] = {
-        { 0.0f, 0.0f }, { 1.0f, 0.0f },
-        { 1.0f, 1.0f }, { 0.0f, 1.0f }
+    build_transform_with_normal(transform, position, rotation, size.x, size.y,
+                                normal_local, &world_normal);
+
+    vec2 tex_coords[4] =
+    {
+        { 0.0f, 0.0f },
+        { 1.0f, 0.0f },
+        { 1.0f, 1.0f },
+        { 0.0f, 1.0f }
     };
 
     for (int i = 0; i < 4; i++)
@@ -865,7 +752,7 @@ void renderer3d_draw_quad(renderer3d_t* r,
         r->vertex_buffer_ptr->position  = transform_vec4(transform, r->quad_vertex_positions[i]);
         r->vertex_buffer_ptr->color     = color;
         r->vertex_buffer_ptr->tex_coord = tex_coords[i];
-        r->vertex_buffer_ptr->normal = normal;
+        r->vertex_buffer_ptr->normal    = world_normal;
         r->vertex_buffer_ptr->tex_index = tex_index;
         r->vertex_buffer_ptr++;
     }
@@ -878,9 +765,9 @@ void renderer3d_draw_mesh(mesh_t* mesh, GLuint shader_id, mat4* model,
                            texture_t* texture)
 {
     glUseProgram(shader_id);
-    set_uniform_mat4(shader_id, "u_model",      model);
-    set_uniform_mat4(shader_id, "u_view",       view);
-    set_uniform_mat4(shader_id, "u_projection", projection);
+    set_uniform_mat4(shader_id, "u_model",       model);
+    set_uniform_mat4(shader_id, "u_view",        view);
+    set_uniform_mat4(shader_id, "u_projection",  projection);
     set_uniform_vec3(shader_id, "u_light_pos",   MAIN_LIGHT_POS);
     set_uniform_vec3(shader_id, "u_light_color", MAIN_LIGHT_COLOR);
 
@@ -899,52 +786,53 @@ void renderer3d_draw_mesh(mesh_t* mesh, GLuint shader_id, mat4* model,
 }
 
 // ------------------------------------------------------------------
-// vec3
+// vec3 / math
 // ------------------------------------------------------------------
 
 vec3 vec3_zero()
 {
-    return (vec3){ 0.0, 0.0, 0.0 };
-}
-
-vec3 vec3_right()
-{
-    return (vec3){ 1.0, 0.0, 0.0 };
-}
-
-vec3 vec3_up()
-{
-    return (vec3){ 0.0, 1.0, 0.0 };
-}
-
-vec3 vec3_forward()
-{
-    return (vec3){ 0.0, 0.0, 1.0 };
+    return (vec3){ 0, 0, 0 };
 }
 
 vec3 vec3_one()
 {
-    return (vec3){ 1.0, 1.0, 1.0 };
+    return (vec3){ 1, 1, 1 };
 }
 
 vec3 vec3_add(vec3* a, vec3* b)
 {
-    return (vec3){ a->x+b->x, a->y+b->y, a->z+b->z };
+    return (vec3)
+    {
+        a->x+b->x,
+        a->y+b->y,
+        a->z+b->z
+    };
 }
 
 vec3 vec3_subtract(vec3* a, vec3* b)
 {
-    return (vec3){ a->x-b->x, a->y-b->y, a->z-b->z };
+    return (vec3)
+    {
+        a->x-b->x,
+        a->y-b->y,
+        a->z-b->z
+    };
 }
 
-vec3 vec3_multiply_scalar(vec3* vec, float scalar)
+vec3 vec3_multiply_scalar(vec3* v, float s)
 {
-    return (vec3){vec->x * scalar, vec->y * scalar, vec->z * scalar};
+    return (vec3)
+    {
+        v->x*s,
+        v->y*s,
+        v->z*s
+    };
 }
 
 vec3 vec3_cross(vec3* a, vec3* b)
 {
-    return (vec3){
+    return (vec3)
+    {
         a->y*b->z - a->z*b->y,
         a->z*b->x - a->x*b->z,
         a->x*b->y - a->y*b->x
@@ -956,33 +844,48 @@ float vec3_dot(vec3* a, vec3* b)
     return a->x*b->x + a->y*b->y + a->z*b->z;
 }
 
+float lerp(float a, float b, float t)
+{
+    return (1-t)*a + t*b;
+}
+
+vec3 vec3_lerp(vec3* a, vec3* b, float t)
+{
+    return (vec3)
+    {
+        lerp(a->x,b->x,t),
+        lerp(a->y,b->y,t),
+        lerp(a->z,b->z,t)
+    };
+}
+
 // ------------------------------------------------------------------
 // mat4
 // ------------------------------------------------------------------
 
-// FIX: usa designated initializer .m
 mat4 mat4_identity()
 {
-    return (mat4){ .m = {
-        1,0,0,0,
-        0,1,0,0,
-        0,0,1,0,
-        0,0,0,1
-    }};
+    return (mat4)
+    {
+        .m =
+        { 1,0,0,0,
+          0,1,0,0,
+          0,0,1,0,
+          0,0,0,1
+        }
+    };
 }
 
-// FIX: corrigido para column-major
 mat4 mat4_multiply(mat4* a, mat4* b)
 {
     mat4 result = {0};
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             for (int k = 0; k < 4; k++)
-                result.m[j * 4 + i] += a->m[k * 4 + i] * b->m[j * 4 + k];
+                result.m[j*4+i] += a->m[k*4+i] * b->m[j*4+k];
     return result;
 }
 
-// FIX: índices corretos para column-major (12,13,14)
 mat4 mat4_translate(mat4* mat, vec3* vec)
 {
     mat4 result = *mat;
@@ -992,46 +895,12 @@ mat4 mat4_translate(mat4* mat, vec3* vec)
     return result;
 }
 
-// FIX: implementado (antes retornava UB)
-mat4 mat4_rotate(mat4* mat, vec3* axis, float angle)
-{
-    float x = axis->x,
-          y = axis->y,
-          z = axis->z;
-    
-    float len = sqrtf(x*x + y*y + z*z);
-    x /= len;
-    y /= len;
-    z /= len;
-
-    float c = cosf(angle),
-          s = sinf(angle),
-          t = 1.0f - c;
-
-    float r[16];
-    mat4_identity_raw(r);
-
-    r[0]  = t*x*x + c;
-    r[4]  = t*x*y - s*z;
-    r[8]  = t*x*z + s*y;
-    r[1]  = t*x*y + s*z;
-    r[5]  = t*y*y + c;
-    r[9]  = t*y*z - s*x;
-    r[2]  = t*x*z - s*y;
-    r[6]  = t*y*z + s*x;
-    r[10] = t*z*z + c;
-
-    mat4 rot = {0};
-    memcpy(rot.m, r, 64);
-    return mat4_multiply(mat, &rot);
-}
-
 mat4 mat4_rotate_x(mat4* mat, float angle)
 {
     mat4 rot = mat4_identity();
-    rot.m[5] =  cosf(angle);
-    rot.m[6] =  sinf(angle);
-    rot.m[9] = -sinf(angle);
+    rot.m[5]  =  cosf(angle);
+    rot.m[9]  = -sinf(angle);
+    rot.m[6]  =  sinf(angle);
     rot.m[10] =  cosf(angle);
     return mat4_multiply(mat, &rot);
 }
@@ -1039,9 +908,9 @@ mat4 mat4_rotate_x(mat4* mat, float angle)
 mat4 mat4_rotate_y(mat4* mat, float angle)
 {
     mat4 rot = mat4_identity();
-    rot.m[0] =  cosf(angle);
-    rot.m[2] = -sinf(angle);
-    rot.m[8] =  sinf(angle);
+    rot.m[0]  =  cosf(angle);
+    rot.m[8]  =  sinf(angle);
+    rot.m[2]  = -sinf(angle);
     rot.m[10] =  cosf(angle);
     return mat4_multiply(mat, &rot);
 }
@@ -1050,13 +919,12 @@ mat4 mat4_rotate_z(mat4* mat, float angle)
 {
     mat4 rot = mat4_identity();
     rot.m[0] =  cosf(angle);
-    rot.m[1] =  sinf(angle);
     rot.m[4] = -sinf(angle);
+    rot.m[1] =  sinf(angle);
     rot.m[5] =  cosf(angle);
     return mat4_multiply(mat, &rot);
 }
 
-// FIX: implementado (antes retornava UB)
 mat4 mat4_scale(mat4* mat, vec3* vec)
 {
     mat4 result = *mat;
@@ -1066,44 +934,29 @@ mat4 mat4_scale(mat4* mat, vec3* vec)
     return result;
 }
 
-void mat4_print(mat4* mat)
-{
-    for (int i = 0; i < 4; i++)
-    {
-        printf("[ ");
-        for (int j = 0; j < 4; j++)
-            printf("%8.3f ", mat->m[i * 4 + j]);
-        printf("]\n");
-    }
-}
-
-mat4 mat4_perspective(float fov, float aspect,
-                      float near, float far)
+mat4 mat4_perspective(float fov, float aspect, float near, float far)
 {
     mat4 result;
-    memset(result.m, 0, 16 * sizeof(float));
-
+    memset(result.m, 0, sizeof(result.m));
     float f = 1.0f / tanf(fov * 0.5f);
-
     result.m[0]  = f / aspect;
     result.m[5]  = f;
     result.m[10] = -(far + near) / (far - near);
     result.m[11] = -1.0f;
     result.m[14] = -(2.0f * far * near) / (far - near);
-
     return result;
 }
 
 mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up)
 {
     mat4 result;
-    memset(result.m, 0, 16 * sizeof(float));
+    memset(result.m, 0, sizeof(result.m));
 
     vec3 f =
     {
         center.x-eye.x,
         center.y-eye.y,
-        center.z-eye.z 
+        center.z-eye.z
     };
 
     float fl = sqrtf(f.x*f.x + f.y*f.y + f.z*f.z);
@@ -1111,19 +964,14 @@ mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up)
 
     vec3 s =
     {
-        f.y*up.z - f.z*up.y,
-        f.z*up.x - f.x*up.z,
-        f.x*up.y - f.y*up.x
+        f.y*up.z-f.z*up.y,
+        f.z*up.x-f.x*up.z,
+        f.x*up.y-f.y*up.x
     };
     float sl = sqrtf(s.x*s.x + s.y*s.y + s.z*s.z);
     s.x /= sl; s.y /= sl; s.z /= sl;
 
-    vec3 u =
-    {
-        s.y*f.z - s.z*f.y,
-        s.z*f.x - s.x*f.z,
-        s.x*f.y - s.y*f.x
-    };
+    vec3 u = { s.y*f.z-s.z*f.y, s.z*f.x-s.x*f.z, s.x*f.y-s.y*f.x };
 
     result.m[0]  =  s.x;
     result.m[4]  =  s.y;
@@ -1146,47 +994,37 @@ mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up)
 // camera
 // ------------------------------------------------------------------
 
-const vec3 CAMERA_UP = (vec3){0, 1, 0};
+const vec3 CAMERA_UP = (vec3){ 0, 1, 0 };
 bool camera_free = false;
 
 typedef struct
 {
-    vec3 position;
-    vec3 last_position; // usado para reverter o 'free movement' da camera
-
-    float yaw;
-    float last_yaw;
-
-    float pitch;
-    float last_pitch;
-
-    float speed;
-    float sensitivity;
-
+    vec3  position;
+    vec3  last_position;
+    float yaw, last_yaw;
+    float pitch, last_pitch;
+    float speed, sensitivity;
 } camera;
 
 vec3 camera_get_forward(camera* cam)
 {
-    vec3 dir;
-
-    dir.x = cosf(cam->yaw) * cosf(cam->pitch);
-    dir.y = sinf(cam->pitch);
-    dir.z = sinf(cam->yaw) * cosf(cam->pitch);
-
+    vec3 dir =
+    {
+        cosf(cam->yaw) * cosf(cam->pitch),
+        sinf(cam->pitch),
+        sinf(cam->yaw) * cosf(cam->pitch)
+    };
     float len = sqrtf(dir.x*dir.x + dir.y*dir.y + dir.z*dir.z);
     dir.x /= len; dir.y /= len; dir.z /= len;
-
     return dir;
 }
 
 vec3 camera_get_right(camera* cam)
 {
-    vec3 forward = camera_get_forward(cam);
-    vec3 right = vec3_cross(&forward, (vec3*)&CAMERA_UP);
-
-    float len = sqrtf(right.x*right.x + right.y*right.y + right.z*right.z);
+    vec3 fwd   = camera_get_forward(cam);
+    vec3 right = vec3_cross(&fwd, (vec3*)&CAMERA_UP);
+    float len  = sqrtf(right.x*right.x + right.y*right.y + right.z*right.z);
     right.x /= len; right.y /= len; right.z /= len;
-
     return right;
 }
 
@@ -1196,18 +1034,16 @@ vec3 camera_get_right(camera* cam)
 
 typedef struct
 {
-    vec3 position;
-    vec3 rotation;
-    vec3 scale;
+    vec3 position, rotation, scale;
 } transform_t;
 
 transform_t transform_identity()
 {
-    transform_t transform;
-    transform.position = vec3_zero();
-    transform.rotation = vec3_zero();
-    transform.scale    = vec3_one();
-    return transform;
+    transform_t t;
+    t.position = vec3_zero();
+    t.rotation = vec3_zero();
+    t.scale    = vec3_one();
+    return t;
 }
 
 typedef struct
@@ -1220,22 +1056,19 @@ typedef struct
 
 game_object_t game_object_create()
 {
-    game_object_t object;
-    object.transform = transform_identity();
-    object.speed = vec3_zero();
-    return object;
+    game_object_t o;
+    o.transform = transform_identity();
+    o.speed     = vec3_zero();
+    o.mesh      = NULL;
+    o.texture   = NULL;
+    return o;
 }
 
-void game_object_update(game_object_t* object, float dt)
+void game_object_update(game_object_t* o, float dt)
 {
-    vec3 delta = vec3_multiply_scalar(&object->speed, dt);
-    object->transform.position = vec3_add(
-        &object->transform.position,
-        &delta
-    );
+    vec3 delta = vec3_multiply_scalar(&o->speed, dt);
+    o->transform.position = vec3_add(&o->transform.position, &delta);
 }
-
-
 
 // ------------------------------------------------------------------
 // game world
@@ -1255,7 +1088,6 @@ void game_world_init(game_world_t* world)
     memset(world, 0, sizeof(game_world_t));
 }
 
-// retorna -1 se lotado
 int game_world_add(game_world_t* world, game_object_t object)
 {
     for (int i = 0; i < MAX_GAME_OBJECTS; i++)
@@ -1274,12 +1106,8 @@ int game_world_add(game_world_t* world, game_object_t object)
 
 void game_world_remove(game_world_t* world, int index)
 {
-    if (index < 0 || index >= MAX_GAME_OBJECTS)
+    if (index < 0 || index >= MAX_GAME_OBJECTS || !world->active[index])
         return;
-    
-    if (!world->active[index])
-        return;
-
     world->active[index] = false;
     world->count--;
 }
@@ -1287,14 +1115,11 @@ void game_world_remove(game_world_t* world, int index)
 void game_world_update(game_world_t* world, float dt)
 {
     for (int i = 0; i < MAX_GAME_OBJECTS; i++)
-    {
-        if (!world->active[i]) continue;
-        game_object_update(&world->objects[i], dt);
-    }
+        if (world->active[i])
+            game_object_update(&world->objects[i], dt);
 }
 
-void game_world_render(game_world_t* world, GLuint shader,
-                       mat4* view, mat4* projection)
+void game_world_render(game_world_t* world, GLuint shader, mat4* view, mat4* projection)
 {
     for (int i = 0; i < MAX_GAME_OBJECTS; i++)
     {
@@ -1304,11 +1129,12 @@ void game_world_render(game_world_t* world, GLuint shader,
 
         mat4 model = mat4_identity();
         model = mat4_translate(&model, &obj->transform.position);
+        model = mat4_rotate_z(&model,   obj->transform.rotation.z);
         model = mat4_rotate_y(&model,   obj->transform.rotation.y);
+        model = mat4_rotate_x(&model,   obj->transform.rotation.x);
         model = mat4_scale   (&model,  &obj->transform.scale);
 
-        renderer3d_draw_mesh(obj->mesh, shader, &model,
-                             view, projection, obj->texture);
+        renderer3d_draw_mesh(obj->mesh, shader, &model, view, projection, obj->texture);
     }
 }
 
@@ -1350,7 +1176,6 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
-
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
         printf("Erro ao inicializar GLAD\n");
@@ -1360,247 +1185,293 @@ int main()
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    // FIX: depth test habilitado
     glEnable(GL_DEPTH_TEST);
+
+    // ------------------------------------------------------------------
+    // sistemas
+    // ------------------------------------------------------------------
 
     time_init();
     input_init(window);
 
     shader_t shader = shader_create_from_src(vertex_src, fragment_src);
 
+    renderer3d_t renderer;
+    renderer3d_init(&renderer);
+
+    mat4 projection = mat4_perspective(
+        PI / 3.0f,
+        (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT,
+        0.1f, 200.0f
+    );
+
+    // ------------------------------------------------------------------
+    // assets: cubo
+    // ------------------------------------------------------------------
+
     vertex3d_t cube_verts[] =
     {
-        // Frente (+Z)
-        {{-0.5,-0.5, 0.5}, {1,0,0,1}, {0,0}, {0,0,1}, 0},
-        {{ 0.5,-0.5, 0.5}, {1,0,0,1}, {1,0}, {0,0,1}, 0},
-        {{ 0.5, 0.5, 0.5}, {1,0,0,1}, {1,1}, {0,0,1}, 0},
-        {{-0.5, 0.5, 0.5}, {1,0,0,1}, {0,1}, {0,0,1}, 0},
-
-        // Trás (-Z)
-        {{-0.5,-0.5,-0.5}, {1,0,0,1}, {0,0}, {0,0,-1}, 0},
-        {{ 0.5,-0.5,-0.5}, {1,0,0,1}, {1,0}, {0,0,-1}, 0},
-        {{ 0.5, 0.5,-0.5}, {1,0,0,1}, {1,1}, {0,0,-1}, 0},
-        {{-0.5, 0.5,-0.5}, {1,0,0,1}, {0,1}, {0,0,-1}, 0},
-
-        // Esquerda (-X)
-        {{-0.5,-0.5,-0.5}, {1,0,0,1}, {0,0}, {-1,0,0}, 0},
-        {{-0.5,-0.5, 0.5}, {1,0,0,1}, {1,0}, {-1,0,0}, 0},
-        {{-0.5, 0.5, 0.5}, {1,0,0,1}, {1,1}, {-1,0,0}, 0},
-        {{-0.5, 0.5,-0.5}, {1,0,0,1}, {0,1}, {-1,0,0}, 0},
-
-        // Direita (+X)
-        {{ 0.5,-0.5,-0.5}, {1,0,0,1}, {0,0}, {1,0,0}, 0},
-        {{ 0.5,-0.5, 0.5}, {1,0,0,1}, {1,0}, {1,0,0}, 0},
-        {{ 0.5, 0.5, 0.5}, {1,0,0,1}, {1,1}, {1,0,0}, 0},
-        {{ 0.5, 0.5,-0.5}, {1,0,0,1}, {0,1}, {1,0,0}, 0},
-
-        // Baixo (-Y)
-        {{-0.5,-0.5,-0.5}, {1,0,0,1}, {0,0}, {0,-1,0}, 0},
-        {{ 0.5,-0.5,-0.5}, {1,0,0,1}, {1,0}, {0,-1,0}, 0},
-        {{ 0.5,-0.5, 0.5}, {1,0,0,1}, {1,1}, {0,-1,0}, 0},
-        {{-0.5,-0.5, 0.5}, {1,0,0,1}, {0,1}, {0,-1,0}, 0},
-
-        // Cima (+Y)
-        {{-0.5, 0.5,-0.5}, {1,0,0,1}, {0,0}, {0,1,0}, 0},
-        {{ 0.5, 0.5,-0.5}, {1,0,0,1}, {1,0}, {0,1,0}, 0},
-        {{ 0.5, 0.5, 0.5}, {1,0,0,1}, {1,1}, {0,1,0}, 0},
-        {{-0.5, 0.5, 0.5}, {1,0,0,1}, {0,1}, {0,1,0}, 0},
+        {{-0.5f,-0.5f, 0.5f},{1,0,0,1},{0,0},{0,0,1},0}, {{ 0.5f,-0.5f, 0.5f},{1,0,0,1},{1,0},{0,0,1},0},
+        {{ 0.5f, 0.5f, 0.5f},{1,0,0,1},{1,1},{0,0,1},0}, {{-0.5f, 0.5f, 0.5f},{1,0,0,1},{0,1},{0,0,1},0},
+        {{-0.5f,-0.5f,-0.5f},{1,0,0,1},{0,0},{0,0,-1},0},{{ 0.5f,-0.5f,-0.5f},{1,0,0,1},{1,0},{0,0,-1},0},
+        {{ 0.5f, 0.5f,-0.5f},{1,0,0,1},{1,1},{0,0,-1},0},{{-0.5f, 0.5f,-0.5f},{1,0,0,1},{0,1},{0,0,-1},0},
+        {{-0.5f,-0.5f,-0.5f},{1,0,0,1},{0,0},{-1,0,0},0},{{-0.5f,-0.5f, 0.5f},{1,0,0,1},{1,0},{-1,0,0},0},
+        {{-0.5f, 0.5f, 0.5f},{1,0,0,1},{1,1},{-1,0,0},0},{{-0.5f, 0.5f,-0.5f},{1,0,0,1},{0,1},{-1,0,0},0},
+        {{ 0.5f,-0.5f,-0.5f},{1,0,0,1},{0,0},{1,0,0},0}, {{ 0.5f,-0.5f, 0.5f},{1,0,0,1},{1,0},{1,0,0},0},
+        {{ 0.5f, 0.5f, 0.5f},{1,0,0,1},{1,1},{1,0,0},0}, {{ 0.5f, 0.5f,-0.5f},{1,0,0,1},{0,1},{1,0,0},0},
+        {{-0.5f,-0.5f,-0.5f},{1,0,0,1},{0,0},{0,-1,0},0},{{ 0.5f,-0.5f,-0.5f},{1,0,0,1},{1,0},{0,-1,0},0},
+        {{ 0.5f,-0.5f, 0.5f},{1,0,0,1},{1,1},{0,-1,0},0},{{-0.5f,-0.5f, 0.5f},{1,0,0,1},{0,1},{0,-1,0},0},
+        {{-0.5f, 0.5f,-0.5f},{1,0,0,1},{0,0},{0,1,0},0}, {{ 0.5f, 0.5f,-0.5f},{1,0,0,1},{1,0},{0,1,0},0},
+        {{ 0.5f, 0.5f, 0.5f},{1,0,0,1},{1,1},{0,1,0},0}, {{-0.5f, 0.5f, 0.5f},{1,0,0,1},{0,1},{0,1,0},0},
     };
 
     uint32_t cube_indices[] =
     {
-        0,1,2,   2,3,0,     // Frente    (verts 0-3)
-        4,5,6,   6,7,4,     // Trás      (verts 4-7)
-        8,9,10,  10,11,8,   // Esquerda  (verts 8-11)
-        12,13,14, 14,15,12, // Direita   (verts 12-15)
-        16,17,18, 18,19,16, // Baixo     (verts 16-19)
-        20,21,22, 22,23,20  // Cima      (verts 20-23)
+         0, 1, 2,  2, 3, 0,   4, 5, 6,  6, 7, 4,
+         8, 9,10, 10,11, 8,  12,13,14, 14,15,12,
+        16,17,18, 18,19,16,  20,21,22, 22,23,20,
     };
 
     mesh_t cube = mesh_create(cube_verts, 24, cube_indices, 36);
 
-    renderer3d_t renderer;
-    renderer3d_init(&renderer);
+    // ------------------------------------------------------------------
+    // assets: spaceship (.obj)
+    // ------------------------------------------------------------------
 
-    mat4 projection = mat4_perspective(PI / 3.0f, (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
-    mat4 view = (mat4){0};
+    obj_data_t spaceship_data = {0};
+    load_obj("spaceship.obj", &spaceship_data);
 
-    float cube_angle = 0.0f;
-
-    camera camera;
-
-    camera.position = (vec3){0, 2.0f, 3.0f};
-    camera.last_position = camera.position;
-
-    camera.yaw = -PI / 2.0f;
-    camera.last_yaw = camera.yaw;
-
-    camera.pitch = -PI / 8;
-    camera.last_pitch = camera.pitch;
-
-    camera.speed = 5.0f;
-    camera.sensitivity = 0.002f;
-
-    obj_data_t cow_data = {0};
-    load_obj("cow.obj", &cow_data);
-
-    int total_verts = cow_data.face_count * 3;
-
-    vertex3d_t* cow_verts  = malloc(total_verts * sizeof(vertex3d_t));
-    uint32_t*   cow_idx    = malloc(total_verts * sizeof(uint32_t));
+    int total_verts = spaceship_data.face_count * 3;
+    vertex3d_t* spaceship_verts = malloc(total_verts * sizeof(vertex3d_t));
+    uint32_t*   spaceship_idx   = malloc(total_verts * sizeof(uint32_t));
 
     for (int i = 0; i < total_verts; i++)
     {
-        int pi = cow_data.pos_indices[i];
-        int ti = cow_data.tex_indices[i];
-        int ni = cow_data.nor_indices[i];
-
-        cow_verts[i].position  = cow_data.positions[pi];
-        cow_verts[i].tex_coord = cow_data.texcoords[ti];
-        cow_verts[i].normal    = cow_data.normals[ni];
-        cow_verts[i].color     = (vec4){1.0f, 0.8f, 0.6f, 1.0f};
-        cow_verts[i].tex_index = 0.0f;
-
-        cow_idx[i] = (uint32_t)i; // cada vértice é único
+        spaceship_verts[i].position  = spaceship_data.positions[spaceship_data.pos_indices[i]];
+        spaceship_verts[i].tex_coord = spaceship_data.texcoords[spaceship_data.tex_indices[i]];
+        spaceship_verts[i].normal    = spaceship_data.normals  [spaceship_data.nor_indices[i]];
+        spaceship_verts[i].color     = (vec4){ 1.0f, 0.8f, 0.6f, 1.0f };
+        spaceship_verts[i].tex_index = 0.0f;
+        spaceship_idx[i]             = (uint32_t)i;
     }
 
-    mesh_t cow = mesh_create(cow_verts, total_verts, cow_idx, total_verts);
-
-    free(cow_verts);
-    free(cow_idx);
-    obj_data_free(&cow_data);
+    mesh_t spaceship_mesh = mesh_create(spaceship_verts, total_verts, spaceship_idx, total_verts);
+    free(spaceship_verts);
+    free(spaceship_idx);
+    obj_data_free(&spaceship_data);
 
     texture_t color_map_texture = texture_load("colormap.png");
+
+    // ------------------------------------------------------------------
+    // game world
+    // ------------------------------------------------------------------
 
     game_world_t world;
     game_world_init(&world);
 
-    // cria uma vaca
-    game_object_t object = game_object_create();
-    object.mesh    = &cow;
-    object.texture = &color_map_texture;
-    int object_id = game_world_add(&world, object);
+    game_object_t spinning_obj = game_object_create();
+    spinning_obj.mesh    = &cube;
+    spinning_obj.texture = NULL;
+    int spinning_id = game_world_add(&world, spinning_obj);
+    world.objects[spinning_id].transform.position = (vec3){ 5.0f, 0.0f, 0.0f };
 
-    world.objects[object_id].speed = (vec3){ 1.0f, 0.0f, 0.0f };
+    game_object_t spaceship_obj = game_object_create();
+    spaceship_obj.mesh    = &spaceship_mesh;
+    spaceship_obj.texture = &color_map_texture;
+    int spaceship_id = game_world_add(&world, spaceship_obj);
+
+    // ------------------------------------------------------------------
+    // câmera debug (TAB)
+    // ------------------------------------------------------------------
+
+    camera debug_cam;
+    debug_cam.position      = (vec3){ 0.0f, 6.0f, 12.0f };
+    debug_cam.last_position = debug_cam.position;
+    debug_cam.yaw           = -PI / 2.0f;
+    debug_cam.last_yaw      = debug_cam.yaw;
+    debug_cam.pitch         = -0.3f;
+    debug_cam.last_pitch    = debug_cam.pitch;
+    debug_cam.speed         = 8.0f;
+    debug_cam.sensitivity   = 0.002f;
+
+    static double debug_last_x    = 0.0, debug_last_y = 0.0;
+    static int    debug_first_mouse = 1;
+
+    // ------------------------------------------------------------------
+    // estado do jogo
+    // ------------------------------------------------------------------
+
+    float cube_angle = 0.0f;
+
+    // grid de movimento
+    const float GRID_CELL_SIZE  = 2.5f;
+    const int   GRID_MIN        = -2;
+    const int   GRID_MAX        =  2;
+    const int   GRID_COLS       =  5;
+    const int   GRID_ROWS       = 60;
+    const float GRID_Z_START    = -20.0f;
+
+    int   ship_cell     = 0;
+    float ship_x_visual = 0.0f;
+    float ship_bank     = 0.0f;
+
+    const float SHIP_SNAP_SPEED = 10.0f;
+    const float SHIP_BANK_MAX   = 0.45f;
+    const float SHIP_BANK_SPEED = 6.0f;
+
+    const vec3  CAM_OFFSET = { 0.0f, 3.0f, -8.0f };
+    const float CAM_LERP   = 6.0f;
+    vec3 cam_pos = { 0.0f, CAM_OFFSET.y, CAM_OFFSET.z };
+
+    float grid_scroll = 0.0f;
+    const float GRID_SCROLL_SPEED = 8.0f;
+
+    // ------------------------------------------------------------------
+    // loop principal
+    // ------------------------------------------------------------------
 
     while (!glfwWindowShouldClose(window))
     {
         time_update();
         input_update();
+        float dt = time_delta();
 
         if (input_get_key(GLFW_KEY_ESCAPE))
             glfwSetWindowShouldClose(window, 1);
 
-        world.objects[object_id].transform.rotation.y = cube_angle;
-        world.objects[object_id].speed = (vec3){ sinf(time_total()), 0.0, 0.0 };
-        game_world_update(&world, time_delta());
-        
-        cube_angle += 1.0f * time_delta();
-
-        vec3 forward = camera_get_forward(&camera);
-        vec3 right   = camera_get_right(&camera);
-
         if (input_get_key_down(GLFW_KEY_TAB))
         {
             camera_free = !camera_free;
-
-            if (!camera_free)
-            {
-                camera.position = camera.last_position;
-                camera.yaw = camera.last_yaw;
-                camera.pitch = camera.last_pitch;
-            }
-            else
-            {
-                camera.last_position = camera.position;
-                camera.last_yaw = camera.yaw;
-                camera.last_pitch = camera.pitch;
-            }
+            if (camera_free) { debug_cam.last_position = debug_cam.position; debug_first_mouse = 1; }
         }
+
+        grid_scroll += GRID_SCROLL_SPEED * dt;
+
+        // ----------------------------------------------------------------
+        // câmera
+        // ----------------------------------------------------------------
+
+        mat4 view;
 
         if (camera_free)
         {
-            static double last_x = 0, last_y = 0;
-            static int first_mouse = 1;
-
             double mouse_x, mouse_y;
             input_get_mouse_position(&mouse_x, &mouse_y);
 
-            if (first_mouse)
+            if (debug_first_mouse)
             {
-                last_x = mouse_x;
-                last_y = mouse_y;
-                first_mouse = 0;
+                debug_last_x = mouse_x;
+                debug_last_y = mouse_y;
+                debug_first_mouse = 0;
             }
 
-            float dx = mouse_x - last_x;
-            float dy = last_y - mouse_y;
+            float dx = (float)(mouse_x - debug_last_x) * debug_cam.sensitivity;
+            float dy = (float)(debug_last_y - mouse_y)  * debug_cam.sensitivity;
+            debug_last_x = mouse_x; debug_last_y = mouse_y;
 
-            last_x = mouse_x;
-            last_y = mouse_y;
+            debug_cam.yaw   += dx;
+            debug_cam.pitch += dy;
+            if (debug_cam.pitch >  1.5f) debug_cam.pitch =  1.5f;
+            if (debug_cam.pitch < -1.5f) debug_cam.pitch = -1.5f;
 
-            dx *= camera.sensitivity;
-            dy *= camera.sensitivity;
-
-            camera.yaw   += dx;
-            camera.pitch += dy;
-
-            // clamp pitch
-            if (camera.pitch >  1.5f) camera.pitch =  1.5f;
-            if (camera.pitch < -1.5f) camera.pitch = -1.5f;
-
-            float velocity = camera.speed * time_delta();
+            vec3  fwd  = camera_get_forward(&debug_cam);
+            vec3  right = camera_get_right(&debug_cam);
+            float vel  = debug_cam.speed * dt;
 
             if (input_get_key(GLFW_KEY_W))
-                camera.position = vec3_add(&camera.position,
-                    &(vec3){forward.x * velocity, forward.y * velocity, forward.z * velocity});
-
+                debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ fwd.x*vel, fwd.y*vel, fwd.z*vel });
             if (input_get_key(GLFW_KEY_S))
-                camera.position = vec3_subtract(&camera.position,
-                    &(vec3){forward.x * velocity, forward.y * velocity, forward.z * velocity});
-
+                debug_cam.position = vec3_subtract(&debug_cam.position, &(vec3){ fwd.x*vel, fwd.y*vel, fwd.z*vel });
             if (input_get_key(GLFW_KEY_A))
-                camera.position = vec3_subtract(&camera.position,
-                    &(vec3){right.x * velocity, right.y * velocity, right.z * velocity});
-
+                debug_cam.position = vec3_subtract(&debug_cam.position, &(vec3){ right.x*vel, right.y*vel, right.z*vel });
             if (input_get_key(GLFW_KEY_D))
-                camera.position = vec3_add(&camera.position,
-                    &(vec3){right.x * velocity, right.y * velocity, right.z * velocity});
-
+                debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ right.x*vel, right.y*vel, right.z*vel });
             if (input_get_key(GLFW_KEY_Q))
-                camera.position = vec3_add(&camera.position, &(vec3){0.0, -velocity, 0.0 });
-            
+                debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ 0.0f, -vel, 0.0f });
             if (input_get_key(GLFW_KEY_E))
-                camera.position = vec3_add(&camera.position, &(vec3){0.0, velocity, 0.0});
+                debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ 0.0f,  vel, 0.0f });
+
+            vec3 target = vec3_add(&debug_cam.position, &fwd);
+            view = mat4_look_at(debug_cam.position, target, CAMERA_UP);
         }
-        
-        vec3 target = vec3_add(&camera.position, &forward);
+        else
+        {
+            if (input_get_key_down(GLFW_KEY_A) && ship_cell < GRID_MAX) ship_cell++;
+            if (input_get_key_down(GLFW_KEY_D) && ship_cell > GRID_MIN) ship_cell--;
 
-        view = mat4_look_at(camera.position, target, CAMERA_UP);
+            float target_x   = ship_cell * GRID_CELL_SIZE;
+            float alpha_snap  = SHIP_SNAP_SPEED * dt;
+            if (alpha_snap > 1.0f) alpha_snap = 1.0f;
+            ship_x_visual = lerp(ship_x_visual, target_x, alpha_snap);
 
-        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+            float diff        = target_x - ship_x_visual;
+            float target_bank = -(diff / GRID_CELL_SIZE) * SHIP_BANK_MAX;
+            ship_bank = lerp(ship_bank, target_bank, SHIP_BANK_SPEED * dt);
+
+            world.objects[spaceship_id].transform.position.x = ship_x_visual;
+            world.objects[spaceship_id].transform.rotation.z = ship_bank;
+
+            // câmera terceira pessoa
+            vec3 ship_pos = world.objects[spaceship_id].transform.position;
+            vec3 target_cam =
+            {
+                ship_pos.x + CAM_OFFSET.x,
+                ship_pos.y + CAM_OFFSET.y,
+                ship_pos.z + CAM_OFFSET.z
+            };
+
+            float alpha_cam = CAM_LERP * dt;
+            if (alpha_cam > 1.0f) alpha_cam = 1.0f;
+            cam_pos = vec3_lerp(&cam_pos, &target_cam, alpha_cam);
+
+            vec3 look_target = { ship_pos.x, ship_pos.y, ship_pos.z + 10.0f };
+            view = mat4_look_at(cam_pos, look_target, CAMERA_UP);
+        }
+
+        // ----------------------------------------------------------------
+        // update world
+        // ----------------------------------------------------------------
+
+        cube_angle += 1.0f * dt;
+        world.objects[spinning_id].transform.rotation.y = cube_angle;
+        game_world_update(&world, dt);
+
+        // ----------------------------------------------------------------
+        // render
+        // ----------------------------------------------------------------
+
+        glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // cubo girando em Y
-        mat4 model = mat4_identity();
-        
-        
-        model = mat4_translate(&model, &(vec3){ 0.0, 1.0, 0.0 });
-        glUseProgram(shader.id);
-
-        //  renderer3d_draw_mesh(&cube, shader.id, &model, &view, &projection);
 
         game_world_render(&world, shader.id, &view, &projection);
 
-        mat4 identity = mat4_identity();
-
-        shader_set_mat4(&shader, "u_model", &identity);
-        shader_set_mat4(&shader, "u_view", &view);
-        shader_set_mat4(&shader, "u_projection", &projection);
+        // ----------------------------------------------------------------
+        // grid de chão (batch)
+        // ----------------------------------------------------------------
 
         renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
 
+        float frac = fmodf(grid_scroll, GRID_CELL_SIZE * 2.0);
+
+        for (int row = 0; row < GRID_ROWS; row++)
+        {
+            for (int col = 0; col < GRID_COLS; col++)
+            {
+                float brightness = ((col + row) % 2 == 0) ? 0.22f : 0.14f;
+                vec4 color = { brightness * 0.8f, brightness * 0.9f, brightness * 1.3f, 1.0f };
+
+                float x = (col + GRID_MIN) * GRID_CELL_SIZE;
+                float z = GRID_Z_START + row * GRID_CELL_SIZE - frac;
+
+                vec3 pos  = { x, -0.6f, z };
+
+                vec3 rot          = { -PI / 2.0f, 0.0f, 0.0f };
+                vec2 size         = { GRID_CELL_SIZE, GRID_CELL_SIZE };
+                vec3 normal_local = { 0.0f, 0.0f, 1.0f };
+
+                renderer3d_draw_quad(&renderer, pos, rot, size, normal_local, 0, color);
+            }
+        }
 
         renderer3d_end_batch(&renderer);
 
@@ -1608,13 +1479,14 @@ int main()
         glfwPollEvents();
     }
 
+    // ------------------------------------------------------------------
+    // cleanup
+    // ------------------------------------------------------------------
+
     texture_destroy(&color_map_texture);
     mesh_destroy(&cube);
-    mesh_destroy(&cow);
-
-    game_world_remove(&world, object_id);
+    mesh_destroy(&spaceship_mesh);
     renderer3d_destroy(&renderer);
-    
     glfwTerminate();
     return 0;
 }
