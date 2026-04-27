@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <time.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -50,29 +51,50 @@ const char* fragment_src =
     "in vec2  v_tex_coord;\n"
     "in vec3  v_normal;\n"
     "in vec3  v_frag_pos;\n"
+    "in float v_tex_index;\n"
 
-    "uniform vec3 u_light_pos;\n"
-    "uniform vec3 u_light_color;\n"
-    "uniform sampler2D u_texture;\n"
-    "uniform int u_use_texture;\n"
+    "uniform vec3 u_light_dir;\n"
+    "uniform vec3        u_light_color;\n"
+    "uniform sampler2D   u_textures[16];\n"
+    "uniform int         u_texture_count;\n"
 
     "out vec4 frag_color;\n"
 
+    "vec4 sample_texture(int idx) {\n"
+    "    if (idx == 0)  return texture(u_textures[0],  v_tex_coord);\n"
+    "    if (idx == 1)  return texture(u_textures[1],  v_tex_coord);\n"
+    "    if (idx == 2)  return texture(u_textures[2],  v_tex_coord);\n"
+    "    if (idx == 3)  return texture(u_textures[3],  v_tex_coord);\n"
+    "    if (idx == 4)  return texture(u_textures[4],  v_tex_coord);\n"
+    "    if (idx == 5)  return texture(u_textures[5],  v_tex_coord);\n"
+    "    if (idx == 6)  return texture(u_textures[6],  v_tex_coord);\n"
+    "    if (idx == 7)  return texture(u_textures[7],  v_tex_coord);\n"
+    "    if (idx == 8)  return texture(u_textures[8],  v_tex_coord);\n"
+    "    if (idx == 9)  return texture(u_textures[9],  v_tex_coord);\n"
+    "    if (idx == 10) return texture(u_textures[10], v_tex_coord);\n"
+    "    if (idx == 11) return texture(u_textures[11], v_tex_coord);\n"
+    "    if (idx == 12) return texture(u_textures[12], v_tex_coord);\n"
+    "    if (idx == 13) return texture(u_textures[13], v_tex_coord);\n"
+    "    if (idx == 14) return texture(u_textures[14], v_tex_coord);\n"
+    "    if (idx == 15) return texture(u_textures[15], v_tex_coord);\n"
+    "    return vec4(1.0, 0.0, 1.0, 1.0);\n"
+    "}\n"
+    
     "void main()\n"
     "{\n"
     "    float ambient_strength = 0.25;\n"
     "    vec3  ambient = ambient_strength * u_light_color;\n"
 
     "    vec3 norm      = normalize(v_normal);\n"
-    "    vec3 light_dir = normalize(u_light_pos - v_frag_pos);\n"
-    "    float diff     = max(dot(norm, light_dir), 0.0);\n"
+    "    float diff     = max(dot(norm, u_light_dir), 0.0);\n"
     "    vec3 diffuse   = diff * u_light_color;\n"
 
+    "    int tex_idx = int(v_tex_index);\n"
     "    vec4 base_color;\n"
-    "    if (u_use_texture == 1)\n"
-    "        base_color = texture(u_texture, v_tex_coord);\n"
-    "    else\n"
+    "    if (tex_idx == 0)\n"
     "        base_color = v_color;\n"
+    "    else\n"
+    "        base_color = sample_texture(tex_idx);\n"
 
     "    vec3 final_color = base_color.rgb * (ambient + diffuse);\n"
     "    frag_color = vec4(final_color, base_color.a);\n"
@@ -93,6 +115,7 @@ typedef struct { float m[16];      } mat4;
 
 const vec3 MAIN_LIGHT_POS   = (vec3){ 0.0f, 20.0f, -5.0f };
 const vec3 MAIN_LIGHT_COLOR = (vec3){ 1.0f,  1.0f,  1.0f };
+const vec3 MAIN_LIGHT_DIR = (vec3){ 0.0f, 0.8f, 0.6f };
 
 // ------------------------------------------------------------------
 // declarações forward
@@ -107,6 +130,7 @@ vec3  vec3_cross(vec3* a, vec3* b);
 float vec3_dot(vec3* a, vec3* b);
 vec3  vec3_lerp(vec3* a, vec3* b, float t);
 float lerp(float a, float b, float t);
+vec3 vec3_from_scalar(float scalar);
 
 mat4 mat4_identity();
 mat4 mat4_multiply(mat4* a, mat4* b);
@@ -295,101 +319,7 @@ void time_update()
     last_time  = now;
 }
 
-// ------------------------------------------------------------------
-// .obj parser
-// ------------------------------------------------------------------
 
-typedef struct
-{
-    vec3* positions;
-    vec2* texcoords;
-    vec3* normals;
-    int position_count, texcoord_count, normal_count;
-    int* pos_indices;
-    int* tex_indices;
-    int* nor_indices;
-    int  face_count;
-} obj_data_t;
-
-void load_obj(const char* path, obj_data_t* obj)
-{
-    FILE* fptr = fopen(path, "r");
-
-    if (!fptr)
-    {
-        printf("Error: could not open %s\n", path);
-        return;
-    }
-
-    int cap_v = 65536, cap_vt = 65536, cap_vn = 65536, cap_f = 131072;
-    obj->positions   = malloc(cap_v  * sizeof(vec3));
-    obj->texcoords   = malloc(cap_vt * sizeof(vec2));
-    obj->normals     = malloc(cap_vn * sizeof(vec3));
-    obj->pos_indices = malloc(cap_f * 3 * sizeof(int));
-    obj->tex_indices = malloc(cap_f * 3 * sizeof(int));
-    obj->nor_indices = malloc(cap_f * 3 * sizeof(int));
-    obj->position_count = obj->texcoord_count = obj->normal_count = obj->face_count = 0;
-
-    char buffer[512];
-    while (fgets(buffer, sizeof(buffer), fptr))
-    {
-        if (strncmp(buffer, "vn ", 3) == 0)
-        {
-            vec3 n;
-            if (sscanf(buffer + 3, "%f %f %f", &n.x, &n.y, &n.z) == 3)
-                obj->normals[obj->normal_count++] = n;
-        }
-        else if (strncmp(buffer, "vt ", 3) == 0)
-        {
-            vec2 t;
-            if (sscanf(buffer + 3, "%f %f", &t.x, &t.y) == 2)
-                obj->texcoords[obj->texcoord_count++] = t;
-        }
-        else if (strncmp(buffer, "v ", 2) == 0)
-        {
-            vec3 v;
-            if (sscanf(buffer + 2, "%f %f %f", &v.x, &v.y, &v.z) == 3)
-                obj->positions[obj->position_count++] = v;
-        }
-        else if (strncmp(buffer, "f ", 2) == 0)
-        {
-            int pi[3], ti[3], ni[3];
-            int r = sscanf(buffer + 2,
-                "%d/%d/%d %d/%d/%d %d/%d/%d",
-                &pi[0],&ti[0],&ni[0], &pi[1],&ti[1],&ni[1], &pi[2],&ti[2],&ni[2]);
-            if (r != 9)
-            {
-                r = sscanf(buffer + 2,
-                    "%d//%d %d//%d %d//%d",
-                    &pi[0],&ni[0], &pi[1],&ni[1], &pi[2],&ni[2]);
-                ti[0] = ti[1] = ti[2] = 1;
-                if (r != 6) continue;
-            }
-            int base = obj->face_count * 3;
-            for (int i = 0; i < 3; i++)
-            {
-                obj->pos_indices[base+i] = pi[i] - 1;
-                obj->tex_indices[base+i] = ti[i] - 1;
-                obj->nor_indices[base+i] = ni[i] - 1;
-            }
-            obj->face_count++;
-        }
-    }
-    fclose(fptr);
-    printf("load_obj: %d verts, %d texcoords, %d normals, %d faces\n",
-           obj->position_count, obj->texcoord_count, obj->normal_count, obj->face_count);
-}
-
-void obj_data_free(obj_data_t* obj)
-{
-    free(obj->positions);
-    free(obj->texcoords);
-    free(obj->normals);
-    free(obj->pos_indices);
-    free(obj->tex_indices);
-    free(obj->nor_indices);
-    memset(obj, 0, sizeof(obj_data_t));
-}
 
 // ------------------------------------------------------------------
 // shader
@@ -561,8 +491,8 @@ texture_t texture_load(const char* path)
     glBindTexture(GL_TEXTURE_2D, tex.id);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex.width, tex.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -659,11 +589,18 @@ void renderer3d_destroy(renderer3d_t* r)
 
 void renderer3d_flush(renderer3d_t* r)
 {
+    glUseProgram(r->current_shader);
+
     for (uint32_t i = 0; i < r->texture_slot_index; i++)
     {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, r->texture_slots[i]);
+
+        char name[32];
+        snprintf(name, sizeof(name), "u_textures[%u]", i);
+        glUniform1i(glGetUniformLocation(r->current_shader, name), (int)i);
     }
+
     glBindVertexArray(r->vao);
     glDrawElements(GL_TRIANGLES, r->index_count, GL_UNSIGNED_INT, NULL);
     glBindVertexArray(0);
@@ -674,24 +611,21 @@ void renderer3d_begin_batch(renderer3d_t* r, GLuint shader_id,
 {
     r->index_count        = 0;
     r->vertex_buffer_ptr  = r->vertex_buffer_base;
-    r->texture_slot_index = 1;
+    r->texture_slot_index = 1;   // slot 0 reservado para "sem textura"
 
     r->current_shader     = shader_id;
     r->current_view       = *view;
     r->current_projection = *projection;
 
     glUseProgram(shader_id);
-    set_uniform_mat4(shader_id, "u_view",        view);
-    set_uniform_mat4(shader_id, "u_projection",  projection);
-
-    set_uniform_vec3(shader_id, "u_light_pos",   MAIN_LIGHT_POS);
-    set_uniform_vec3(shader_id, "u_light_color", MAIN_LIGHT_COLOR);
+    set_uniform_mat4(shader_id, "u_view",       view);
+    set_uniform_mat4(shader_id, "u_projection", projection);
+    set_uniform_vec3(shader_id, "u_light_dir", MAIN_LIGHT_DIR);
+    set_uniform_vec3(shader_id, "u_light_color",MAIN_LIGHT_COLOR);
 
     mat4 identity = mat4_identity();
     set_uniform_mat4(shader_id, "u_model", &identity);
-
-    // sem textura por padrão
-    glUniform1i(uniform_loc(shader_id, "u_use_texture"), 0);
+    // sem u_use_texture aqui
 }
 
 void renderer3d_end_batch(renderer3d_t* r)
@@ -707,53 +641,63 @@ void renderer3d_draw_quad(renderer3d_t* r,
                           vec3 rotation,
                           vec2 size,
                           vec3 normal_local,
-                          GLuint texture_id,
-                          vec4 color)
+                          GLuint texture_id,      // 0 = sem textura
+                          vec4 color,
+                          texture_t* texture)     // pode ser NULL
 {
     if (r->index_count >= MAX_INDICES)
     {
         renderer3d_end_batch(r);
-        renderer3d_begin_batch(r, r->current_shader, &r->current_view, &r->current_projection);
+        renderer3d_begin_batch(r, r->current_shader,
+                               &r->current_view, &r->current_projection);
     }
 
+    // --- registra a textura no slot ---
     float tex_index = 0.0f;
-    for (uint32_t i = 1; i < r->texture_slot_index; i++)
-    {
-        if (r->texture_slots[i] == texture_id) { tex_index = (float)i; break; }
-    }
 
-    if (tex_index == 0.0f)
+    if (texture && texture->id != 0)
     {
-        if (r->texture_slot_index >= MAX_TEXTURES)
+        for (uint32_t i = 1; i < r->texture_slot_index; i++)
         {
-            renderer3d_end_batch(r);
-            renderer3d_begin_batch(r, r->current_shader, &r->current_view, &r->current_projection);
+            if (r->texture_slots[i] == texture->id)
+            {
+                tex_index = (float)i;
+                break;
+            }
         }
-        tex_index = (float)r->texture_slot_index;
-        r->texture_slots[r->texture_slot_index++] = texture_id;
+
+        if (tex_index == 0.0f)
+        {
+            if (r->texture_slot_index >= MAX_TEXTURES)
+            {
+                renderer3d_end_batch(r);
+                renderer3d_begin_batch(r, r->current_shader,
+                                       &r->current_view, &r->current_projection);
+            }
+            tex_index = (float)r->texture_slot_index;
+            r->texture_slots[r->texture_slot_index++] = texture->id;
+        }
     }
 
+    // --- transform + normal ---
     float transform[16];
     vec3  world_normal;
+    build_transform_with_normal(transform, position, rotation,
+                                size.x, size.y, normal_local, &world_normal);
 
-    build_transform_with_normal(transform, position, rotation, size.x, size.y,
-                                normal_local, &world_normal);
-
-    vec2 tex_coords[4] =
-    {
-        { 0.0f, 0.0f },
-        { 1.0f, 0.0f },
-        { 1.0f, 1.0f },
-        { 0.0f, 1.0f }
+    vec2 tex_coords[4] = {
+        { 0.0f, 0.0f }, { 1.0f, 0.0f },
+        { 1.0f, 1.0f }, { 0.0f, 1.0f }
     };
 
     for (int i = 0; i < 4; i++)
     {
-        r->vertex_buffer_ptr->position  = transform_vec4(transform, r->quad_vertex_positions[i]);
+        r->vertex_buffer_ptr->position  = transform_vec4(transform,
+                                              r->quad_vertex_positions[i]);
         r->vertex_buffer_ptr->color     = color;
         r->vertex_buffer_ptr->tex_coord = tex_coords[i];
         r->vertex_buffer_ptr->normal    = world_normal;
-        r->vertex_buffer_ptr->tex_index = tex_index;
+        r->vertex_buffer_ptr->tex_index = tex_index;  // 0 = cor pura
         r->vertex_buffer_ptr++;
     }
 
@@ -768,21 +712,234 @@ void renderer3d_draw_mesh(mesh_t* mesh, GLuint shader_id, mat4* model,
     set_uniform_mat4(shader_id, "u_model",       model);
     set_uniform_mat4(shader_id, "u_view",        view);
     set_uniform_mat4(shader_id, "u_projection",  projection);
-    set_uniform_vec3(shader_id, "u_light_pos",   MAIN_LIGHT_POS);
-    set_uniform_vec3(shader_id, "u_light_color", MAIN_LIGHT_COLOR);
+    set_uniform_vec3(shader_id, "u_light_dir", MAIN_LIGHT_DIR);
+    set_uniform_vec3(shader_id, "u_light_color",MAIN_LIGHT_COLOR);
 
     if (texture && texture->id != 0)
     {
-        texture_bind(texture, 0);
-        glUniform1i(uniform_loc(shader_id, "u_texture"),     0);
-        glUniform1i(uniform_loc(shader_id, "u_use_texture"), 1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, texture->id);
+        glUniform1i(glGetUniformLocation(shader_id, "u_textures[1]"), 1);
     }
     else
     {
-        glUniform1i(uniform_loc(shader_id, "u_use_texture"), 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glUniform1i(glGetUniformLocation(shader_id, "u_textures[0]"), 0);
     }
 
     mesh_draw(mesh);
+}
+
+// ------------------------------------------------------------------
+// game objects
+// ------------------------------------------------------------------
+
+typedef struct
+{
+    vec3 position, rotation, scale;
+} transform_t;
+
+transform_t transform_identity()
+{
+    transform_t t;
+    t.position = vec3_zero();
+    t.rotation = vec3_zero();
+    t.scale    = vec3_one();
+    return t;
+}
+
+typedef struct
+{
+    transform_t transform;
+    vec3        speed;
+    vec3        angular_speed;
+    mesh_t*     mesh;
+    texture_t*  texture;
+} game_object_t;
+
+game_object_t game_object_create()
+{
+    game_object_t o;
+    o.transform     = transform_identity();
+    o.speed         = vec3_zero();
+    o.angular_speed = vec3_zero();
+    o.mesh          = NULL;
+    o.texture       = NULL;
+    return o;
+}
+
+void game_object_update(game_object_t* o, float dt)
+{
+    vec3 delta = vec3_multiply_scalar(&o->speed, dt);
+    vec3 delta_angle = vec3_multiply_scalar(&o->angular_speed, dt);
+    o->transform.position = vec3_add(&o->transform.position, &delta);
+    o->transform.rotation = vec3_add(&o->transform.rotation, &delta_angle);
+}
+
+// ------------------------------------------------------------------
+// .obj parser
+// ------------------------------------------------------------------
+
+typedef struct
+{
+    vec3* positions;
+    vec2* texcoords;
+    vec3* normals;
+    int position_count, texcoord_count, normal_count;
+    int* pos_indices;
+    int* tex_indices;
+    int* nor_indices;
+    int  face_count;
+} obj_data_t;
+
+void load_obj(const char* path, obj_data_t* obj)
+{
+    FILE* fptr = fopen(path, "r");
+
+    if (!fptr)
+    {
+        printf("Error: could not open %s\n", path);
+        return;
+    }
+
+    int cap_v = 65536, cap_vt = 65536, cap_vn = 65536, cap_f = 131072;
+    obj->positions   = malloc(cap_v  * sizeof(vec3));
+    obj->texcoords   = malloc(cap_vt * sizeof(vec2));
+    obj->normals     = malloc(cap_vn * sizeof(vec3));
+    obj->pos_indices = malloc(cap_f * 3 * sizeof(int));
+    obj->tex_indices = malloc(cap_f * 3 * sizeof(int));
+    obj->nor_indices = malloc(cap_f * 3 * sizeof(int));
+    obj->position_count = obj->texcoord_count = obj->normal_count = obj->face_count = 0;
+
+    char buffer[512];
+    while (fgets(buffer, sizeof(buffer), fptr))
+    {
+        if (strncmp(buffer, "vn ", 3) == 0)
+        {
+            vec3 n;
+            if (sscanf(buffer + 3, "%f %f %f", &n.x, &n.y, &n.z) == 3)
+                obj->normals[obj->normal_count++] = n;
+        }
+        else if (strncmp(buffer, "vt ", 3) == 0)
+        {
+            vec2 t;
+            if (sscanf(buffer + 3, "%f %f", &t.x, &t.y) == 2)
+                obj->texcoords[obj->texcoord_count++] = t;
+        }
+        else if (strncmp(buffer, "v ", 2) == 0)
+        {
+            vec3 v;
+            if (sscanf(buffer + 2, "%f %f %f", &v.x, &v.y, &v.z) == 3)
+                obj->positions[obj->position_count++] = v;
+        }
+        else if (strncmp(buffer, "f ", 2) == 0)
+        {
+            int pi[3], ti[3], ni[3];
+            int r = sscanf(buffer + 2,
+                "%d/%d/%d %d/%d/%d %d/%d/%d",
+                &pi[0],&ti[0],&ni[0], &pi[1],&ti[1],&ni[1], &pi[2],&ti[2],&ni[2]);
+            if (r != 9)
+            {
+                r = sscanf(buffer + 2,
+                    "%d//%d %d//%d %d//%d",
+                    &pi[0],&ni[0], &pi[1],&ni[1], &pi[2],&ni[2]);
+                ti[0] = ti[1] = ti[2] = 1;
+                if (r != 6) continue;
+            }
+            int base = obj->face_count * 3;
+            for (int i = 0; i < 3; i++)
+            {
+                obj->pos_indices[base+i] = pi[i] - 1;
+                obj->tex_indices[base+i] = ti[i] - 1;
+                obj->nor_indices[base+i] = ni[i] - 1;
+            }
+            obj->face_count++;
+        }
+    }
+    fclose(fptr);
+    printf("load_obj: %d verts, %d texcoords, %d normals, %d faces\n",
+           obj->position_count, obj->texcoord_count, obj->normal_count, obj->face_count);
+}
+
+void obj_data_free(obj_data_t* obj)
+{
+    free(obj->positions);
+    free(obj->texcoords);
+    free(obj->normals);
+    free(obj->pos_indices);
+    free(obj->tex_indices);
+    free(obj->nor_indices);
+    memset(obj, 0, sizeof(obj_data_t));
+}
+
+// ------------------------------------------------------------------
+// asset loading
+// ------------------------------------------------------------------
+
+typedef struct
+{
+    mesh_t    mesh;
+    texture_t texture;
+    bool      has_texture;
+} model_asset_t;
+
+model_asset_t model_asset_load(const char* obj_path, const char* texture_path, float tex_index)
+{
+    model_asset_t asset = {0};
+
+    obj_data_t data = {0};
+    load_obj(obj_path, &data);
+
+    if (data.face_count == 0)
+    {
+        printf("model_asset_load: falha ao carregar %s\n", obj_path);
+        obj_data_free(&data);
+        return asset;
+    }
+
+    int total_verts = data.face_count * 3;
+    vertex3d_t* verts = malloc(total_verts * sizeof(vertex3d_t));
+    uint32_t*   idx   = malloc(total_verts * sizeof(uint32_t));
+
+    for (int i = 0; i < total_verts; i++)
+    {
+        verts[i].position  = data.positions[data.pos_indices[i]];
+        verts[i].tex_coord = data.texcoords[data.tex_indices[i]];
+        verts[i].normal    = data.normals  [data.nor_indices[i]];
+        verts[i].color     = (vec4){ 1.0f, 1.0f, 1.0f, 1.0f };
+        verts[i].tex_index = tex_index;
+        idx[i]             = (uint32_t)i;
+    }
+
+    asset.mesh = mesh_create(verts, total_verts, idx, total_verts);
+    free(verts);
+    free(idx);
+    obj_data_free(&data);
+
+    if (texture_path != NULL)
+    {
+        asset.texture     = texture_load(texture_path);
+        asset.has_texture = (asset.texture.id != 0);
+    }
+
+    return asset;
+}
+
+void model_asset_destroy(model_asset_t* asset)
+{
+    mesh_destroy(&asset->mesh);
+    if (asset->has_texture)
+        texture_destroy(&asset->texture);
+    memset(asset, 0, sizeof(model_asset_t));
+}
+
+game_object_t model_asset_instantiate(model_asset_t* asset)
+{
+    game_object_t obj = game_object_create();
+    obj.mesh    = &asset->mesh;
+    obj.texture = asset->has_texture ? &asset->texture : NULL;
+    return obj;
 }
 
 // ------------------------------------------------------------------
@@ -859,6 +1016,11 @@ vec3 vec3_lerp(vec3* a, vec3* b, float t)
     };
 }
 
+vec3 vec3_from_scalar(float scalar)
+{
+    return (vec3){ scalar, scalar, scalar };
+}
+
 // ------------------------------------------------------------------
 // mat4
 // ------------------------------------------------------------------
@@ -927,11 +1089,11 @@ mat4 mat4_rotate_z(mat4* mat, float angle)
 
 mat4 mat4_scale(mat4* mat, vec3* vec)
 {
-    mat4 result = *mat;
-    result.m[0]  *= vec->x;
-    result.m[5]  *= vec->y;
-    result.m[10] *= vec->z;
-    return result;
+    mat4 s = mat4_identity();
+    s.m[0]  = vec->x;
+    s.m[5]  = vec->y;
+    s.m[10] = vec->z;
+    return mat4_multiply(mat, &s);
 }
 
 mat4 mat4_perspective(float fov, float aspect, float near, float far)
@@ -1028,47 +1190,7 @@ vec3 camera_get_right(camera* cam)
     return right;
 }
 
-// ------------------------------------------------------------------
-// game objects
-// ------------------------------------------------------------------
 
-typedef struct
-{
-    vec3 position, rotation, scale;
-} transform_t;
-
-transform_t transform_identity()
-{
-    transform_t t;
-    t.position = vec3_zero();
-    t.rotation = vec3_zero();
-    t.scale    = vec3_one();
-    return t;
-}
-
-typedef struct
-{
-    transform_t transform;
-    vec3        speed;
-    mesh_t*     mesh;
-    texture_t*  texture;
-} game_object_t;
-
-game_object_t game_object_create()
-{
-    game_object_t o;
-    o.transform = transform_identity();
-    o.speed     = vec3_zero();
-    o.mesh      = NULL;
-    o.texture   = NULL;
-    return o;
-}
-
-void game_object_update(game_object_t* o, float dt)
-{
-    vec3 delta = vec3_multiply_scalar(&o->speed, dt);
-    o->transform.position = vec3_add(&o->transform.position, &delta);
-}
 
 // ------------------------------------------------------------------
 // game world
@@ -1112,11 +1234,21 @@ void game_world_remove(game_world_t* world, int index)
     world->count--;
 }
 
+const float ROOM_X_BOUND = 500.0;
 void game_world_update(game_world_t* world, float dt)
 {
     for (int i = 0; i < MAX_GAME_OBJECTS; i++)
+    {
         if (world->active[i])
+        {
             game_object_update(&world->objects[i], dt);
+            if (world->objects[i].transform.position.z > ROOM_X_BOUND)
+            {
+                world->active[i] = 0;
+            }
+        }
+    }
+        
 }
 
 void game_world_render(game_world_t* world, GLuint shader, mat4* view, mat4* projection)
@@ -1127,15 +1259,72 @@ void game_world_render(game_world_t* world, GLuint shader, mat4* view, mat4* pro
         game_object_t* obj = &world->objects[i];
         if (!obj->mesh) continue;
 
+        // S
         mat4 model = mat4_identity();
-        model = mat4_translate(&model, &obj->transform.position);
-        model = mat4_rotate_z(&model,   obj->transform.rotation.z);
-        model = mat4_rotate_y(&model,   obj->transform.rotation.y);
-        model = mat4_rotate_x(&model,   obj->transform.rotation.x);
-        model = mat4_scale   (&model,  &obj->transform.scale);
+        model.m[0]  = obj->transform.scale.x;
+        model.m[5]  = obj->transform.scale.y;
+        model.m[10] = obj->transform.scale.z;
+
+        // R (Z * Y * X aplicado à esquerda)
+        model = mat4_rotate_x(&model, obj->transform.rotation.x);
+        model = mat4_rotate_y(&model, obj->transform.rotation.y);
+        model = mat4_rotate_z(&model, obj->transform.rotation.z);
+
+        // T
+        model.m[12] = obj->transform.position.x;
+        model.m[13] = obj->transform.position.y;
+        model.m[14] = obj->transform.position.z;
 
         renderer3d_draw_mesh(obj->mesh, shader, &model, view, projection, obj->texture);
     }
+}
+
+game_object_t* game_world_get_object(game_world_t* world, int object_id)
+{
+    return &(world->objects[object_id]);
+}
+
+// ------------------------------------------------------------------
+// random
+// ------------------------------------------------------------------
+
+void rand_init()
+{
+    srand((unsigned int)time(NULL));
+}
+
+void rand_init_seed(unsigned int seed)
+{
+    srand(seed);
+}
+
+int rand_int(int min, int max)
+{
+    return min + rand() % (max - min + 1);
+}
+
+float rand_float01()
+{
+    return (float)rand() / (float)RAND_MAX;
+}
+
+float rand_float(float min, float max)
+{
+    return min + rand_float01() * (max - min);
+}
+
+int rand_chance(float p)
+{
+    return rand_float01() < p;
+}
+
+vec3 rand_vec3(float min, float max)
+{
+    return (vec3){
+        rand_float(min, max),
+        rand_float(min, max),
+        rand_float(min, max)
+    };
 }
 
 // ------------------------------------------------------------------
@@ -1186,11 +1375,14 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // ------------------------------------------------------------------
     // sistemas
     // ------------------------------------------------------------------
 
+    rand_init();
     time_init();
     input_init(window);
 
@@ -1234,51 +1426,32 @@ int main()
 
     mesh_t cube = mesh_create(cube_verts, 24, cube_indices, 36);
 
+    game_world_t world;
+    game_world_init(&world);
+
     // ------------------------------------------------------------------
-    // assets: spaceship (.obj)
+    // assets loading
     // ------------------------------------------------------------------
 
-    obj_data_t spaceship_data = {0};
-    load_obj("spaceship.obj", &spaceship_data);
+    model_asset_t spaceship_asset = model_asset_load("spaceship.obj", "spaceship.png", 1.0f);
+    model_asset_t asteroid_asset  = model_asset_load("asteroid1.obj",  "asteroid1.png",  1.0f);
 
-    int total_verts = spaceship_data.face_count * 3;
-    vertex3d_t* spaceship_verts = malloc(total_verts * sizeof(vertex3d_t));
-    uint32_t*   spaceship_idx   = malloc(total_verts * sizeof(uint32_t));
+    game_object_t spaceship_obj = model_asset_instantiate(&spaceship_asset);
+    spaceship_obj.transform.scale = vec3_from_scalar(0.25);
+    int spaceship_id = game_world_add(&world, spaceship_obj);
 
-    for (int i = 0; i < total_verts; i++)
-    {
-        spaceship_verts[i].position  = spaceship_data.positions[spaceship_data.pos_indices[i]];
-        spaceship_verts[i].tex_coord = spaceship_data.texcoords[spaceship_data.tex_indices[i]];
-        spaceship_verts[i].normal    = spaceship_data.normals  [spaceship_data.nor_indices[i]];
-        spaceship_verts[i].color     = (vec4){ 1.0f, 0.8f, 0.6f, 1.0f };
-        spaceship_verts[i].tex_index = 0.0f;
-        spaceship_idx[i]             = (uint32_t)i;
-    }
+    game_object_t asteroid_obj = model_asset_instantiate(&asteroid_asset);
+    asteroid_obj.transform.scale = vec3_from_scalar(3.0);
+    asteroid_obj.angular_speed = (vec3){ 0.0, rand_float(-5.0, 5.0), 0.0 };
+    int asteroid_id = game_world_add(&world, asteroid_obj);
 
-    mesh_t spaceship_mesh = mesh_create(spaceship_verts, total_verts, spaceship_idx, total_verts);
-    free(spaceship_verts);
-    free(spaceship_idx);
-    obj_data_free(&spaceship_data);
-
-    texture_t color_map_texture = texture_load("colormap.png");
 
     // ------------------------------------------------------------------
     // game world
     // ------------------------------------------------------------------
 
-    game_world_t world;
-    game_world_init(&world);
+    
 
-    game_object_t spinning_obj = game_object_create();
-    spinning_obj.mesh    = &cube;
-    spinning_obj.texture = NULL;
-    int spinning_id = game_world_add(&world, spinning_obj);
-    world.objects[spinning_id].transform.position = (vec3){ 5.0f, 0.0f, 0.0f };
-
-    game_object_t spaceship_obj = game_object_create();
-    spaceship_obj.mesh    = &spaceship_mesh;
-    spaceship_obj.texture = &color_map_texture;
-    int spaceship_id = game_world_add(&world, spaceship_obj);
 
     // ------------------------------------------------------------------
     // câmera debug (TAB)
@@ -1301,13 +1474,11 @@ int main()
     // estado do jogo
     // ------------------------------------------------------------------
 
-    float cube_angle = 0.0f;
-
     // grid de movimento
     const float GRID_CELL_SIZE  = 2.5f;
-    const int   GRID_MIN        = -2;
-    const int   GRID_MAX        =  2;
-    const int   GRID_COLS       =  5;
+    const int   GRID_MIN        = -4;
+    const int   GRID_MAX        =  4;
+    const int   GRID_COLS       =  9;
     const int   GRID_ROWS       = 60;
     const float GRID_Z_START    = -20.0f;
 
@@ -1319,7 +1490,7 @@ int main()
     const float SHIP_BANK_MAX   = 0.45f;
     const float SHIP_BANK_SPEED = 6.0f;
 
-    const vec3  CAM_OFFSET = { 0.0f, 3.0f, -8.0f };
+    const vec3  CAM_OFFSET = { 0.0f, 5.0f, -8.0f };
     const float CAM_LERP   = 6.0f;
     vec3 cam_pos = { 0.0f, CAM_OFFSET.y, CAM_OFFSET.z };
 
@@ -1407,16 +1578,20 @@ int main()
             float diff        = target_x - ship_x_visual;
             float target_bank = -(diff / GRID_CELL_SIZE) * SHIP_BANK_MAX;
             ship_bank = lerp(ship_bank, target_bank, SHIP_BANK_SPEED * dt);
+            
+            float spaceship_y_siner = sinf(time_total()) * 0.5 + 0.5;
 
-            world.objects[spaceship_id].transform.position.x = ship_x_visual;
-            world.objects[spaceship_id].transform.rotation.z = ship_bank;
+            game_object_t* spaceship = game_world_get_object(&world, spaceship_id);
+            spaceship->transform.position.x = ship_x_visual;
+            spaceship->transform.position.y = spaceship_y_siner;
+            spaceship->transform.rotation.z = ship_bank;
 
             // câmera terceira pessoa
             vec3 ship_pos = world.objects[spaceship_id].transform.position;
             vec3 target_cam =
             {
                 ship_pos.x + CAM_OFFSET.x,
-                ship_pos.y + CAM_OFFSET.y,
+                ship_pos.y + CAM_OFFSET.y - spaceship_y_siner,
                 ship_pos.z + CAM_OFFSET.z
             };
 
@@ -1424,16 +1599,24 @@ int main()
             if (alpha_cam > 1.0f) alpha_cam = 1.0f;
             cam_pos = vec3_lerp(&cam_pos, &target_cam, alpha_cam);
 
-            vec3 look_target = { ship_pos.x, ship_pos.y, ship_pos.z + 10.0f };
+            vec3 look_target = { ship_pos.x, ship_pos.y - spaceship_y_siner, ship_pos.z + 5.0f };
             view = mat4_look_at(cam_pos, look_target, CAMERA_UP);
+
+            if (input_get_key_down(GLFW_KEY_P))
+            {
+                game_object_t bullet = game_object_create();
+                bullet.transform.position = spaceship->transform.position;
+                bullet.mesh = &cube;
+                bullet.texture = NULL;
+                bullet.speed = (vec3){ 0.0, 0.0, 50.0 };
+                int bullet_id = game_world_add(&world, bullet);
+            }
         }
 
         // ----------------------------------------------------------------
         // update world
         // ----------------------------------------------------------------
 
-        cube_angle += 1.0f * dt;
-        world.objects[spinning_id].transform.rotation.y = cube_angle;
         game_world_update(&world, dt);
 
         // ----------------------------------------------------------------
@@ -1469,7 +1652,9 @@ int main()
                 vec2 size         = { GRID_CELL_SIZE, GRID_CELL_SIZE };
                 vec3 normal_local = { 0.0f, 0.0f, 1.0f };
 
-                renderer3d_draw_quad(&renderer, pos, rot, size, normal_local, 0, color);
+                renderer3d_draw_quad(&renderer, pos, rot, size,
+                                      normal_local, 0,
+                                      color, NULL);
             }
         }
 
@@ -1483,9 +1668,9 @@ int main()
     // cleanup
     // ------------------------------------------------------------------
 
-    texture_destroy(&color_map_texture);
     mesh_destroy(&cube);
-    mesh_destroy(&spaceship_mesh);
+    model_asset_destroy(&spaceship_asset);
+    model_asset_destroy(&asteroid_asset);
     renderer3d_destroy(&renderer);
     glfwTerminate();
     return 0;
