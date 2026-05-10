@@ -1,0 +1,3 @@
+/home/luis/Dev/jogo_psel_fog/build/CMakeFiles/jogo_psel_fog.dir
+/home/luis/Dev/jogo_psel_fog/build/CMakeFiles/edit_cache.dir
+/home/luis/Dev/jogo_psel_fog/build/CMakeFiles/rebuild_cache.dir
