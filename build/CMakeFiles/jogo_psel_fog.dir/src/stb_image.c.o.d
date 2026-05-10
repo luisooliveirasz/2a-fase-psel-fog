@@ -1,6 +1,6 @@
 CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.o: \
  /home/luis/Dev/jogo_psel_fog/src/stb_image.c /usr/include/stdc-predef.h \
- /home/luis/Dev/jogo_psel_fog/src/stb_image.h /usr/include/stdio.h \
+ /home/luis/Dev/jogo_psel_fog/include/stb_image.h /usr/include/stdio.h \
  /usr/include/bits/libc-header-start.h /usr/include/features.h \
  /usr/include/features-time64.h /usr/include/bits/wordsize.h \
  /usr/include/bits/timesize.h /usr/include/sys/cdefs.h \

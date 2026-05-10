@@ -4,7 +4,6 @@ jogo_psel_fog: \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o \
   CMakeFiles/jogo_psel_fog.dir/src/main.c.o \
   CMakeFiles/jogo_psel_fog.dir/src/glad.c.o \
-  CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.o \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libglfw.so \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libm.so \
   /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libm.so \
@@ -49,8 +48,6 @@ jogo_psel_fog: \
 CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
 
 CMakeFiles/jogo_psel_fog.dir/src/glad.c.o:
-
-CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.o:
 
 /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/../../../../lib/libglfw.so:
 

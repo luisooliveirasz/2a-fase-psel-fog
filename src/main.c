@@ -1,3 +1,9 @@
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -5,12 +11,62 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdarg.h>
 #include <time.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include "stb_image.h"
+/*
+.................................................................................................................
+.................................................................................................................
+....................................................................................................=*:..........
+................................................................................................:*#*-:...........
+.............................................................................................:###*--:............
+..........................................................................................:+###*:-:..............
+........................................................................................+**##*:-:................
+.................:###*##*=:.........................................................:+***#*+:--::................
+.................:*#####*#*#++=...........-+=-..-=+=++=...=-:-:..................-+***#*#=:-=--::................
+..................:+*#****+***+**==----**=*=*#%*#***@**#**++**+-===+==:---=-==**######+--=+=-:::::...............
+....................:=*+****+##-+--===++==-:--*#=*%@*#*+---=**-==+*-=-*=++===**#+=++=+**+=-::::..................
+....................--=-===**=---==*=*:-*#=.::-%#++=+::-=#*+-*++=*+*+**=-==++=---=++#***+==:.....................
+....................:=+++++-:===+=*##+-=%%#=-=+**+=#=:++%%#-=*%*==++=*+*+==--+*===--=***==-:::...................
+.....................---==+*##-=-=*#*=--+%%-==*%+#++=:+%@*--=#*%+-+*#*****++-===++*+==+-==:......................
+.....................:-:=*#%%*=--+##%--:=%--+*+=+-==+-+#*--:+%%%==-**%%%%##+*-++=+*+=-----:......................
+....................::==+=#*##=-==#%*-::-+*-=-**+==:++++:--=+@%#+:+=%@%#***#++=++==*+=-=+=:......................
+....................::--=++=+=++:-*%=--===----+++---=+++-=-==*%#-=+++**#*++++=+++++++-====--.....................
+..................:=-.-::--:::.-::-++-==+=-=+--==+==+=+*=====*%*====+-*=**+-*==-=***====*+*=:....................
+................:=+**=+*#####%#*-:::::--==--====-=:=+++++======-:-::-=+**##++====+**++===+*+.....................
+................-###*#**%#*#*#%%@@%*-:..:-==-+=-+-++=++--::::--=*%@@@@@@%%%@@@###*#+*+*+==+=:....................
+..............:-*##++::+%+++*%%#%@%@@#-..:-=----:==+++--:::=+#@@@%@%%%%%####@#**#%%%%%%#+=+*+:...................
+:.............:=#==-:..:#*-=+*%%@@%#%@#:..-----=-=-==--:::=#@@%%##*@@@%%##%@*-:-=+###%%%**+**=:..................
+.::...........=*=-++==-:-+%#++*@@#**#@%:.:-:::----:-==-::*%@@@@####%@@@%%+-:.:=-=++++*%%%#+***+..................
+:::::........:**=++==+*+::-=+**##****#%=--::-----=--==+=#@@@%#*#***++=:----==+++***#**#%%%#****:.................
+:::::::......-*+-++-:-==:+--:::::..:+%@*+=-=--=====++++*@@%*=-::::::::---=:+**++**+***#%%%##***=.................
+:::::::::..::=*=:-=-:-=-=-=--=-=:.:+#%#++++=====+++*****%%#*==:.::-+==-=-+-:-=-++*++++**#%%#***=.................
+:::::::::::.:=+=-:-==---=====++--=+***##+++++=++++**####+#**+:::==+--+=*+*++-=*#*****+***%@%%#*+.................
+:::::::::::::-+---:=+++-+==-=:--==+*+*+**++*++++********#+#*+=-==+-++*+===*#*++++==++*+**%@@%%#*:................
+::::::::::::::-----..-=*#+==+==-=*+=-+*###******#####*##*++*++++==++*+#*+**=====++-=++++*#%###%=:................
+....::::::::::--=**+-=+#*+=--====----+**+********##%%#**+++=++++**++=+*%%%%#*++++++*++=++++****-.................
+.............:=*%###**##=---==+---:::+***++++++++***%@%+=====+++*+++*+=**=+%@%%%%%%%#*++++=++#=:.................
+..............-##*+-----==-===+*++-...:=*%#+*++#@@%%*+---====+**+****++++=+=+**#%%@@%#*+++++##=::................
+..............:==-::::::.::::::::::......:#+**+*%+=---:::==+**=*##%***+====++++++*#%@%#*+***#++-:................
+...............:==-::=-::-:-=-+*==-:.......*%%%#::.:::::-:---====--::=+=----:==+++*%%%%%%##%#**=::...............
+................::-======:..::-:::.........:-#=.::::.:::=++*+=#***#+++===+*+++++++++*%%#*+#****+-:...............
+.................:::-==+=---==-==--.-::::-:::=-::::-=::-::=--==---=-=---====+==--==+*##**#*+***+--::.::..........
+..................-=-=====--:::::::.::::::--+*#==:::-=--=:----++**+++-=--===++*+++*###*++=+**##*+-:..:::........:
+..................:-==-==++-::---=--:-::-=+*++=++*==----===*+++=+====-::===+*+*####**++**+*#*****+::::::.:.....:-
+.................:-+==--=-====-:-----=====+-=--===*++======+*++*=+=-=---=-==+##**##**++***######*=-::::::::...::-
+.................-=+=++----==:=-:::::::::---::-:-:-=----======----:----=++**=*++***+*########%##*+=::::::::::::--
+.........:......:-===+*+==---=-===-::.:::::::::::::-::::::::::-:--===+*****+*#+***+#####%%####****+-::::::::::---
+................:--===+==++-===---===-:::...::::::::::::::::-----==+*+*****+**+#+**#*#%%##+*##*#*++-:::::::::----
+...............:-=++=-+++++++++=====+++=+-:::::::::::::-:--==+**+*##**+++++***##*%##%%#*#*######*++-::::::::-----
+..............::====+=+++==+++++==-=====+*+++*=+=-=+++=**+**+****+***+*+*****#*###*#####*+#######*+-::::::::-----
+...............-++*+==+==+++++=+---=-==-===+++*+******+++***++**+*++++*******###**#+*#+*+##+*#%#***+-::::::--=---
+...............:++++++-+===+++=-+==--=---===++=++++**+++++++++++**++++******#%##*#*+****+###*#%####*--::::-===---
+...............-+++++--======+====---==---======++++*+=+++++++++++*+*++*****####********++#**#*#%%#*=--::-=====--
+..............:=+*#+++===-===-====----------=-=====+*+==++**=+++++++++******#****+*#**++++#*##%*%#**+===========-
+*/
 
 #define PI 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679f
 
@@ -1259,7 +1315,80 @@ vec3 camera_get_right(camera* cam)
     return right;
 }
 
+vec2 vec2_zero()
+{
+    return (vec2){ 0, 0 };
+}
 
+vec2 vec2_one()
+{
+    return (vec2){ 1, 1 };
+}
+
+vec2 vec2_from_scalar(float s)
+{
+    return (vec2){ s, s };
+}
+
+vec2 vec2_add(vec2* a, vec2* b)
+{
+    return (vec2){ a->x + b->x, a->y + b->y };
+}
+
+vec2 vec2_subtract(vec2* a, vec2* b)
+{
+    return (vec2){ a->x - b->x, a->y - b->y };
+}
+
+vec2 vec2_multiply_scalar(vec2* v, float s)
+{
+    return (vec2){ v->x * s, v->y * s };
+}
+
+vec2 vec2_multiply(vec2* a, vec2* b)
+{
+    return (vec2){ a->x * b->x, a->y * b->y };
+}
+
+vec2 vec2_divide_scalar(vec2* v, float s)
+{
+    return (vec2){ v->x / s, v->y / s };
+}
+
+vec2 vec2_negate(vec2* v)
+{
+    return (vec2){ -v->x, -v->y };
+}
+
+float vec2_dot(vec2* a, vec2* b)
+{
+    return a->x * b->x + a->y * b->y;
+}
+
+float vec2_length_sq(vec2* v)
+{
+    return v->x * v->x + v->y * v->y;
+}
+
+float vec2_length(vec2* v)
+{
+    return sqrtf(vec2_length_sq(v));
+}
+
+vec2 vec2_normalize(vec2* v)
+{
+    float len = vec2_length(v);
+    if (len < 0.00001f) return vec2_zero();
+    return (vec2){ v->x / len, v->y / len };
+}
+
+vec2 vec2_lerp(vec2* a, vec2* b, float t)
+{
+    return (vec2){
+        a->x + (b->x - a->x) * t,
+        a->y + (b->y - a->y) * t,
+    };
+}
 
 // ------------------------------------------------------------------
 // game object array (dinâmico)
@@ -1716,10 +1845,6 @@ void snake_update(snake_t* snake, float current_time)
     }
 
     snake->segments.data[0] = new_head;
-
-    //
-
-    
 }
 
 void snake_grow(snake_t* snake)
@@ -1804,7 +1929,8 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, snake_t* snake)
         int y = rand_int(-4, 4);
 
         candidate = vec3_multiply_scalar(&NORMAL_VECTORS[vector_index], 5.5f);
-        candidate = vec3_subtract(&candidate, &(vec3){ 0.0f, 0.0f, 0.5f });
+        vec3 inward = vec3_multiply_scalar(&NORMAL_VECTORS[vector_index], -0.5f);
+        candidate = vec3_add(&candidate, &inward);
 
         vec3 right_position   = vec3_multiply_scalar(&RIGHT_VECTORS[vector_index],   1.1f * x);
         vec3 forward_position = vec3_multiply_scalar(&FORWARD_VECTORS[vector_index], 1.1f * y);
@@ -1843,12 +1969,356 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, snake_t* snake)
 }
 
 // ------------------------------------------------------------------
+// configuração
+// ------------------------------------------------------------------
+ 
+#define TEXT_ATLAS_W     512
+#define TEXT_ATLAS_H     512
+#define TEXT_FIRST_CHAR  32
+#define TEXT_CHAR_COUNT  96
+#define TEXT_MAX_CHARS   1024  // máximo de chars por draw call
+ 
+// ------------------------------------------------------------------
+// shaders 2D internos
+// ------------------------------------------------------------------
+ 
+static const char* TEXT_VS =
+    "#version 330 core\n"
+    "layout(location = 0) in vec2 a_pos;\n"
+    "layout(location = 1) in vec2 a_uv;\n"
+    "uniform mat4 u_projection;\n"
+    "uniform mat4 u_model;\n"
+    "out vec2 v_uv;\n"
+    "void main() {\n"
+    "    gl_Position = u_projection * u_model * vec4(a_pos, 0.0, 1.0);\n"
+    "    v_uv = a_uv;\n"
+    "}\n";
+ 
+static const char* TEXT_FS =
+    "#version 330 core\n"
+    "in vec2 v_uv;\n"
+    "uniform sampler2D u_atlas;\n"
+    "uniform vec4 u_color;\n"
+    "out vec4 frag_color;\n"
+    "void main() {\n"
+    "    float alpha = texture(u_atlas, v_uv).r;\n"
+    "    frag_color = vec4(u_color.rgb, u_color.a * alpha);\n"
+    "}\n";
+ 
+// ------------------------------------------------------------------
+// tipos internos
+// ------------------------------------------------------------------
+ 
+typedef struct {
+    float x, y;
+    float u, v;
+} text_vertex_t;
+ 
+typedef struct {
+    // GPU
+    GLuint vao, vbo, ibo;
+    GLuint shader;
+    GLuint atlas_tex;
+ 
+    // font data
+    stbtt_bakedchar cdata[TEXT_CHAR_COUNT];
+ 
+    // batch
+    text_vertex_t* verts;   // TEXT_MAX_CHARS * 4 vértices
+    uint32_t*      indices; // TEXT_MAX_CHARS * 6 índices
+    int            quad_count;
+ 
+    // tela
+    int screen_w, screen_h;
+} text_renderer_t;
+ 
+// instância global (pode ser ponteiro se preferir)
+static text_renderer_t g_text;
+ 
+// ------------------------------------------------------------------
+// helpers internos
+// ------------------------------------------------------------------
+ 
+static GLuint text_compile_shader(const char* vs_src, const char* fs_src)
+{
+    char log[512];
+    int  ok;
+ 
+    GLuint vs = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vs, 1, &vs_src, NULL);
+    glCompileShader(vs);
+    glGetShaderiv(vs, GL_COMPILE_STATUS, &ok);
+    if (!ok)
+    {
+        glGetShaderInfoLog(vs, 512, NULL, log);
+        printf("[text] VS error: %s\n", log);
+    }
+ 
+    GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fs, 1, &fs_src, NULL);
+    glCompileShader(fs);
+    glGetShaderiv(fs, GL_COMPILE_STATUS, &ok);
+    if (!ok)
+    {
+        glGetShaderInfoLog(fs, 512, NULL, log);
+        printf("[text] FS error: %s\n", log);
+    }
+ 
+    GLuint prog = glCreateProgram();
+    glAttachShader(prog, vs);
+    glAttachShader(prog, fs);
+    glLinkProgram(prog);
+    glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+    if (!ok)
+    {
+        glGetProgramInfoLog(prog, 512, NULL, log);
+        printf("[text] Link error: %s\n", log);
+    }
+ 
+    glDeleteShader(vs);
+    glDeleteShader(fs);
+    return prog;
+}
+ 
+static void text_set_projection(int w, int h)
+{
+    float L = 0.0f, R = (float)w;
+    float T = 0.0f, B = (float)h;
+ 
+    float m[16] = {
+        2.0f/(R-L),    0,             0,  0,
+        0,             2.0f/(T-B),    0,  0,
+        0,             0,            -1,  0,
+        -(R+L)/(R-L), -(T+B)/(T-B),  0,  1
+    };
+ 
+    glUseProgram(g_text.shader);
+    GLint loc = glGetUniformLocation(g_text.shader, "u_projection");
+    glUniformMatrix4fv(loc, 1, GL_FALSE, m);
+}
+ 
+int text_renderer_init(const char* ttf_path, float font_size, int screen_w, int screen_h)
+{
+    memset(&g_text, 0, sizeof(g_text));
+    g_text.screen_w = screen_w;
+    g_text.screen_h = screen_h;
+ 
+    // lê o .ttf
+    FILE* f = fopen(ttf_path, "rb");
+    if (!f) { printf("[text] Não foi possível abrir: %s\n", ttf_path); return 0; }
+    fseek(f, 0, SEEK_END);
+    long sz = ftell(f);
+    rewind(f);
+    unsigned char* ttf_buf = (unsigned char*)malloc(sz);
+    fread(ttf_buf, 1, sz, f);
+    fclose(f);
+ 
+    // --- bake do atlas ---
+    unsigned char* bitmap = (unsigned char*)malloc(TEXT_ATLAS_W * TEXT_ATLAS_H);
+    int result = stbtt_BakeFontBitmap(
+        ttf_buf, 0,
+        font_size,
+        bitmap, TEXT_ATLAS_W, TEXT_ATLAS_H,
+        TEXT_FIRST_CHAR, TEXT_CHAR_COUNT,
+        g_text.cdata
+    );
+    free(ttf_buf);
+ 
+    if (result <= 0)
+    {
+        printf("[text] Aviso: atlas pode estar pequeno demais (result=%d). Aumente TEXT_ATLAS_W/H.\n", result);
+    }
+ 
+    // textura do atlas (canal R)
+    glGenTextures(1, &g_text.atlas_tex);
+    glBindTexture(GL_TEXTURE_2D, g_text.atlas_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
+                 TEXT_ATLAS_W, TEXT_ATLAS_H,
+                 0, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    free(bitmap);
+ 
+    g_text.shader = text_compile_shader(TEXT_VS, TEXT_FS);
+ 
+    int max_verts   = TEXT_MAX_CHARS * 4;
+    int max_indices = TEXT_MAX_CHARS * 6;
+ 
+    g_text.verts   = (text_vertex_t*)malloc(max_verts   * sizeof(text_vertex_t));
+    g_text.indices = (uint32_t*)     malloc(max_indices * sizeof(uint32_t));
+ 
+    for (int i = 0; i < TEXT_MAX_CHARS; i++)
+    {
+        uint32_t b = i * 4;
+        g_text.indices[i*6+0] = b+0; g_text.indices[i*6+1] = b+1; g_text.indices[i*6+2] = b+2;
+        g_text.indices[i*6+3] = b+2; g_text.indices[i*6+4] = b+3; g_text.indices[i*6+5] = b+0;
+    }
+ 
+    glGenVertexArrays(1, &g_text.vao);
+    glBindVertexArray(g_text.vao);
+ 
+    glGenBuffers(1, &g_text.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, g_text.vbo);
+    glBufferData(GL_ARRAY_BUFFER, max_verts * sizeof(text_vertex_t), NULL, GL_DYNAMIC_DRAW);
+ 
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(text_vertex_t), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(text_vertex_t), (void*)(2*sizeof(float)));
+    glEnableVertexAttribArray(1);
+ 
+    glGenBuffers(1, &g_text.ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_text.ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, max_indices * sizeof(uint32_t), g_text.indices, GL_STATIC_DRAW);
+ 
+    glBindVertexArray(0);
+ 
+    text_set_projection(screen_w, screen_h);
+ 
+    printf("[text] Sistema de texto inicializado: %s @ %.0fpx\n", ttf_path, font_size);
+    return 1;
+}
+ 
+void text_renderer_resize(int screen_w, int screen_h)
+{
+    g_text.screen_w = screen_w;
+    g_text.screen_h = screen_h;
+    text_set_projection(screen_w, screen_h);
+}
+ 
+void text_draw(float x, float y, float r, float g, float b, float a, float scale_x, float scale_y, const char* text)
+{
+    float text_width;
+    g_text.quad_count = 0;
+    float cx = 0, cy = 0;
+    
+    for (const char* p = text; *p; p++)
+    {
+        char c = *p;
+        if (c == '\n')
+        {
+            cy += 30.0f;
+            cx = x;
+            continue;
+        }
+        if (c < TEXT_FIRST_CHAR || c >= TEXT_FIRST_CHAR + TEXT_CHAR_COUNT) continue;
+        if (g_text.quad_count >= TEXT_MAX_CHARS) break;
+ 
+        stbtt_aligned_quad q;
+        stbtt_GetBakedQuad(g_text.cdata,
+                           TEXT_ATLAS_W, TEXT_ATLAS_H,
+                           c - TEXT_FIRST_CHAR,
+                           &cx, &cy, &q,
+                           1);
+ 
+        int qi = g_text.quad_count * 4;
+        g_text.verts[qi+0] = (text_vertex_t){ q.x0, q.y0, q.s0, q.t0 };
+        g_text.verts[qi+1] = (text_vertex_t){ q.x1, q.y0, q.s1, q.t0 };
+        g_text.verts[qi+2] = (text_vertex_t){ q.x1, q.y1, q.s1, q.t1 };
+        g_text.verts[qi+3] = (text_vertex_t){ q.x0, q.y1, q.s0, q.t1 };
+        text_width = q.x1;
+ 
+        g_text.quad_count++;
+    }
+ 
+    if (g_text.quad_count == 0) return;
+ 
+    GLboolean depth_was_enabled = glIsEnabled(GL_DEPTH_TEST);
+    GLboolean blend_was_enabled = glIsEnabled(GL_BLEND);
+ 
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+ 
+    glBindBuffer(GL_ARRAY_BUFFER, g_text.vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0,
+                    g_text.quad_count * 4 * sizeof(text_vertex_t),
+                    g_text.verts);
+ 
+    glUseProgram(g_text.shader);
+ 
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, g_text.atlas_tex);
+
+    vec3 scale_vector = (vec3){ scale_x, scale_y, 1.0f };
+    mat4 model = mat4_identity();
+    model = mat4_translate(&model, &(vec3){ x, y, 0.0f });
+    model = mat4_scale(&model, &scale_vector);
+    model = mat4_translate(&model, &(vec3){ -text_width / 2.0f * scale_x, 0.0f, 0.0f });
+
+    glUniform1i(glGetUniformLocation(g_text.shader, "u_atlas"), 0);
+    glUniform4f(glGetUniformLocation(g_text.shader, "u_color"), r, g, b, a);
+    glUniformMatrix4fv(glGetUniformLocation(g_text.shader, "u_model"), 1, GL_FALSE, model.m);
+ 
+    glBindVertexArray(g_text.vao);
+    glDrawElements(GL_TRIANGLES, g_text.quad_count * 6, GL_UNSIGNED_INT, NULL);
+    glBindVertexArray(0);
+ 
+    if (depth_was_enabled) glEnable(GL_DEPTH_TEST);
+    if (!blend_was_enabled) glDisable(GL_BLEND);
+}
+ 
+void text_drawf(float x, float y, float r, float g, float b, float a, float scale_x, float scale_y, const char* fmt, ...)
+{
+    char buf[512];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    text_draw(x, y, r, g, b, a, scale_x, scale_y, buf);
+}
+ 
+void text_renderer_destroy()
+{
+    glDeleteBuffers(1, &g_text.vbo);
+    glDeleteBuffers(1, &g_text.ibo);
+    glDeleteVertexArrays(1, &g_text.vao);
+    glDeleteTextures(1, &g_text.atlas_tex);
+    glDeleteProgram(g_text.shader);
+    free(g_text.verts);
+    free(g_text.indices);
+    memset(&g_text, 0, sizeof(g_text));
+}
+
+// ------------------------------------------------------------------
+// main menu / options menu / pause menu
+// ------------------------------------------------------------------
+
+typedef enum {
+    MAIN_MENU_MODE,
+    OPTIONS_MODE,
+    GAME_MODE,
+    PAUSE_MENU_MODE
+} game_mode_t;
+
+game_mode_t game_mode = MAIN_MENU_MODE;
+
+const vec3 SELECTED_ITEM_COLOR = (vec3){ 1.0f, 1.0f, 0.0f };
+const vec3 NORMAL_ITEM_COLOR   = (vec3){ 1.0f, 1.0f, 1.0f };
+
+int main_menu_selected_item = 0;
+int main_menu_max_items = 3;
+const char MAIN_MENU_OPTIONS[3][8] = { "Start", "Options", "Exit" };
+vec2 main_menu_items_scale[3] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
+
+int options_selected_item = 0;
+int options_max_items = 2;
+const char OPTIONS_OPTIONS[2][20] = { "Back", "Toggle Debug Cam" };
+vec2 options_items_scale[2] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
+
+int pause_selected_item = 0;
+int pause_max_items = 2;
+const char PAUSE_OPTIONS[2][10] = { "Resume", "Main Menu" };
+vec2 pause_items_scale[2] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
+
+// ------------------------------------------------------------------
 // callbacks
 // ------------------------------------------------------------------
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
+    text_renderer_resize(width, height);
 }
 
 // ------------------------------------------------------------------
@@ -1885,6 +2355,8 @@ int main()
         printf("Erro ao inicializar GLAD\n");
         return -1;
     }
+
+    text_renderer_init("arial.ttf", 24.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -1933,7 +2405,6 @@ int main()
         {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{0,1,0},1}, {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{0,1,0},1},
     };
 
-    // cubo sem textura (tex_index = 0)
     vertex3d_t cube_no_tex_verts[] =
     {
         {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,0},{0,0,1},0}, {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{0,0,1},0},
@@ -1965,7 +2436,7 @@ int main()
     texture_t cube_texture = texture_load("box.jpg");
 
     // ------------------------------------------------------------------
-    // cria cubo oco 9x9x9
+    // cria o cubo
     // ------------------------------------------------------------------
 
     const int CUBE_SIZE = 9;
@@ -1976,7 +2447,6 @@ int main()
         {
             for (int k = -5; k <= 5; k++)
             {
-                // só cria se estiver em exatamente uma face (não arestas nem vértices)
                 bool on_x_face = (i == -5 || i == 5);
                 bool on_y_face = (j == -5 || j == 5);
                 bool on_z_face = (k == -5 || k == 5);
@@ -1989,7 +2459,6 @@ int main()
                 block.texture = NULL;
                 block.blend_color = (vec3){ 1.0, 0.7, 0.5 };
 
-                // escala: 0.1 na direção da normal da face, 1 nas outras
                 vec3 scale = (vec3){ 1.0, 1.0, 1.0 };
                 vec3 block_position;
                 if (on_x_face)
@@ -2012,7 +2481,6 @@ int main()
                 
                 block.transform.scale = scale;
 
-                // posição: i = X, j = Y, k = Z
                 block.transform.position = vec3_subtract(&block_position, &(vec3){ 0.0f, 0.0f, 0.5f });
 
                 game_world_add(&world, block);
@@ -2034,7 +2502,7 @@ int main()
     game_object_t* apple = game_world_get_object(&world, apple_id);
 
     // ------------------------------------------------------------------
-    // câmera debug (TAB)
+    // câmera debug
     // ------------------------------------------------------------------
 
     camera debug_cam;
@@ -2063,144 +2531,359 @@ int main()
         input_update();
         float dt = time_delta();
 
-        snake_update(&snake, time_total());
-
-        vec3* head = vec3_array_get(&snake.segments, 0);
-        if (head)
+        switch (game_mode)
         {
-
-            float dx = apple->transform.position.x - head->x;
-            float dy = apple->transform.position.y - head->y;
-            float dz = apple->transform.position.z - head->z;
-            float dist_sq = dx*dx + dy*dy + dz*dz;
-
-            if (dist_sq < 1.2f)
+            case MAIN_MENU_MODE:
             {
-                game_world_remove(&world, apple_id);
-                snake_grow(&snake);
-                apple_create(&world, &cube_no_tex, &snake);
+                glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                text_draw(
+                    WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - 120.0f,
+                    1, 1, 1, 1, 2.0f, 2.0f, "SNAKE 3D"
+                );
+
+                for (int i = 0; i < main_menu_max_items; i++)
+                {
+                    vec3 color = main_menu_selected_item == i ? SELECTED_ITEM_COLOR : NORMAL_ITEM_COLOR;
+                    main_menu_items_scale[i] = vec2_lerp(
+                        &main_menu_items_scale[i], &(vec2){ 1.0f, 1.0f }, 0.075f
+                    );
+                    text_draw(
+                        WINDOW_WIDTH / 2.0f,
+                        WINDOW_HEIGHT / 2.0f + (i - 1) * 50.0f,
+                        color.x, color.y, color.z, 1.0f,
+                        main_menu_items_scale[i].x, main_menu_items_scale[i].y,
+                        MAIN_MENU_OPTIONS[i]
+                    );
+                }
+
+                if (input_get_key_down(GLFW_KEY_W))
+                {
+                    main_menu_selected_item--;
+                    if (main_menu_selected_item < 0)
+                        main_menu_selected_item = main_menu_max_items - 1;
+                    main_menu_items_scale[main_menu_selected_item] = (vec2){ 1.5f, 1.5f };
+                }
+
+                if (input_get_key_down(GLFW_KEY_S))
+                {
+                    main_menu_selected_item++;
+                    if (main_menu_selected_item > main_menu_max_items - 1)
+                        main_menu_selected_item = 0;
+                    main_menu_items_scale[main_menu_selected_item] = (vec2){ 1.5f, 1.5f };
+                }
+
+                if (input_get_key_down(GLFW_KEY_ENTER))
+                {
+                    switch (main_menu_selected_item)
+                    {
+                        case 0:
+                            snake_free(&snake);
+                            snake_init(&snake, 10.0f, 0.15f);
+                            snake_grow(&snake);
+                            snake_grow(&snake);
+                            snake_grow(&snake);
+                            game_world_remove(&world, apple_id);
+                            apple_id = apple_create(&world, &cube_no_tex, &snake);
+                            apple = game_world_get_object(&world, apple_id);
+                            game_mode = GAME_MODE;
+                        break;
+
+                        case 1:
+                            options_selected_item = 0;
+                            game_mode = OPTIONS_MODE;
+                        break;
+
+                        case 2:
+                            glfwSetWindowShouldClose(window, 1);
+                        break;
+                    }
+                }
             }
-        }
+            break;
 
-        if (input_get_key(GLFW_KEY_ESCAPE))
-        {
-            glfwSetWindowShouldClose(window, 1);
-        }
-
-        if (input_get_key_down(GLFW_KEY_CAPS_LOCK))
-        {
-            snake.paused = !snake.paused;
-        }
-
-        if (input_get_key_down(GLFW_KEY_TAB))
-        {
-            camera_free = !camera_free;
-            if (camera_free)
+            case OPTIONS_MODE:
             {
-                debug_cam.last_position = debug_cam.position;
-                debug_first_mouse = 1;
+                glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                text_draw(
+                    WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - 100.0f,
+                    1, 1, 1, 1, 1.5f, 1.5f, "OPTIONS"
+                );
+
+                char debug_label[32];
+                snprintf(debug_label, sizeof(debug_label), "Debug Cam: %s", camera_free ? "ON" : "OFF");
+
+                const char* options_labels[2] = { "Back", debug_label };
+
+                for (int i = 0; i < options_max_items; i++)
+                {
+                    vec3 color = options_selected_item == i ? SELECTED_ITEM_COLOR : NORMAL_ITEM_COLOR;
+                    options_items_scale[i] = vec2_lerp(
+                        &options_items_scale[i], &(vec2){ 1.0f, 1.0f }, 0.075f
+                    );
+                    text_draw(
+                        WINDOW_WIDTH / 2.0f,
+                        WINDOW_HEIGHT / 2.0f + (i - 1) * 50.0f,
+                        color.x, color.y, color.z, 1.0f,
+                        options_items_scale[i].x, options_items_scale[i].y,
+                        options_labels[i]
+                    );
+                }
+
+                if (input_get_key_down(GLFW_KEY_W))
+                {
+                    options_selected_item--;
+                    if (options_selected_item < 0)
+                        options_selected_item = options_max_items - 1;
+                    options_items_scale[options_selected_item] = (vec2){ 1.5f, 1.5f };
+                }
+
+                if (input_get_key_down(GLFW_KEY_S))
+                {
+                    options_selected_item++;
+                    if (options_selected_item > options_max_items - 1)
+                        options_selected_item = 0;
+                    options_items_scale[options_selected_item] = (vec2){ 1.5f, 1.5f };
+                }
+
+                if (input_get_key_down(GLFW_KEY_ENTER))
+                {
+                    switch (options_selected_item)
+                    {
+                        case 0:
+                            game_mode = MAIN_MENU_MODE;
+                        break;
+
+                        case 1:
+                            camera_free = !camera_free;
+                            options_items_scale[1] = (vec2){ 1.3f, 1.3f };
+                        break;
+                    }
+                }
+
+                if (input_get_key_down(GLFW_KEY_ESCAPE))
+                    game_mode = MAIN_MENU_MODE;
             }
-        }
+            break;
 
-        // ----------------------------------------------------------------
-        // update world
-        // ----------------------------------------------------------------
-
-        game_world_update(&world, dt);
-
-        // ----------------------------------------------------------------
-        // câmera
-        // ----------------------------------------------------------------
-
-        mat4 view;
-
-        if (camera_free)
-        {
-            double mouse_x, mouse_y;
-            input_get_mouse_position(&mouse_x, &mouse_y);
-
-            if (debug_first_mouse)
+            case GAME_MODE:
             {
-                debug_last_x = mouse_x;
-                debug_last_y = mouse_y;
-                debug_first_mouse = 0;
+                if (input_get_key_down(GLFW_KEY_ESCAPE))
+                {
+                    pause_selected_item = 0;
+                    pause_items_scale[0] = (vec2){ 1.0f, 1.0f };
+                    pause_items_scale[1] = (vec2){ 1.0f, 1.0f };
+                    game_mode = PAUSE_MENU_MODE;
+                    break;
+                }
+
+                snake_update(&snake, time_total());
+
+                vec3* head = vec3_array_get(&snake.segments, 0);
+                if (head && apple)
+                {
+                    float dx = apple->transform.position.x - head->x;
+                    float dy = apple->transform.position.y - head->y;
+                    float dz = apple->transform.position.z - head->z;
+                    float dist_sq = dx*dx + dy*dy + dz*dz;
+
+                    if (dist_sq < 1.2f)
+                    {
+                        game_world_remove(&world, apple_id);
+                        snake_grow(&snake);
+                        apple_id = apple_create(&world, &cube_no_tex, &snake);
+                        apple = game_world_get_object(&world, apple_id);
+                    }
+                }
+
+                if (input_get_key_down(GLFW_KEY_CAPS_LOCK))
+                    snake.paused = !snake.paused;
+
+                if (input_get_key_down(GLFW_KEY_TAB))
+                {
+                    camera_free = !camera_free;
+                    if (camera_free)
+                    {
+                        debug_cam.last_position = debug_cam.position;
+                        debug_first_mouse = 1;
+                    }
+                }
+
+                game_world_update(&world, dt);
+
+                mat4 view;
+
+                if (camera_free)
+                {
+                    double mouse_x, mouse_y;
+                    input_get_mouse_position(&mouse_x, &mouse_y);
+
+                    if (debug_first_mouse)
+                    {
+                        debug_last_x = mouse_x;
+                        debug_last_y = mouse_y;
+                        debug_first_mouse = 0;
+                    }
+
+                    float dx = (float)(mouse_x - debug_last_x) * debug_cam.sensitivity;
+                    float dy = (float)(debug_last_y - mouse_y)  * debug_cam.sensitivity;
+                    debug_last_x = mouse_x;
+                    debug_last_y = mouse_y;
+
+                    debug_cam.yaw   += dx;
+                    debug_cam.pitch += dy;
+                    if (debug_cam.pitch >  1.5f) debug_cam.pitch =  1.5f;
+                    if (debug_cam.pitch < -1.5f) debug_cam.pitch = -1.5f;
+
+                    vec3  fwd   = camera_get_forward(&debug_cam);
+                    vec3  right = camera_get_right(&debug_cam);
+                    float vel   = debug_cam.speed * dt;
+
+                    if (input_get_key(GLFW_KEY_W))
+                        debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ fwd.x*vel, fwd.y*vel, fwd.z*vel });
+                    if (input_get_key(GLFW_KEY_S))
+                        debug_cam.position = vec3_subtract(&debug_cam.position, &(vec3){ fwd.x*vel, fwd.y*vel, fwd.z*vel });
+                    if (input_get_key(GLFW_KEY_A))
+                        debug_cam.position = vec3_subtract(&debug_cam.position, &(vec3){ right.x*vel, right.y*vel, right.z*vel });
+                    if (input_get_key(GLFW_KEY_D))
+                        debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ right.x*vel, right.y*vel, right.z*vel });
+                    if (input_get_key(GLFW_KEY_Q))
+                        debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ 0.0f, -vel, 0.0f });
+                    if (input_get_key(GLFW_KEY_E))
+                        debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ 0.0f,  vel, 0.0f });
+
+                    vec3 target = vec3_add(&debug_cam.position, &fwd);
+                    view = mat4_look_at(debug_cam.position, target, CAMERA_UP);
+                }
+                else
+                {
+                    vec3* snake_head_pos = vec3_array_get(&snake.segments, 0);
+                    if (!snake_head_pos)
+                    {
+                        view = mat4_look_at(game_camera.position, vec3_zero(), CAMERA_UP);
+                    }
+                    else
+                    {
+                        vec3 behind = vec3_negate(&snake.head_forward);
+                        behind = vec3_normalize(&behind);
+
+                        vec3 camera_offset = vec3_multiply_scalar(&behind, 8.0f);
+                        vec3 up_offset     = vec3_multiply_scalar(&snake.current_face_normal, 4.0f);
+                        vec3 target_pos    = vec3_add(snake_head_pos, &camera_offset);
+                        target_pos         = vec3_add(&target_pos, &up_offset);
+
+                        game_camera.position = vec3_lerp(&game_camera.position, &target_pos, 0.08f);
+
+                        vec3 look_target = *snake_head_pos;
+                        static vec3 smooth_target = {0};
+                        smooth_target = vec3_lerp(&smooth_target, &look_target, 0.15f);
+
+                        view = mat4_look_at(game_camera.position, smooth_target, snake.current_face_normal);
+                    }
+                }
+
+                glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                game_world_render(&world, shader.id, &view, &projection);
+                snake_render(&snake, &cube, &cube, shader.id, &cube_texture, &view, &projection);
+
+                renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
+                renderer3d_end_batch(&renderer);
+
+                int score = snake.segments.size - 4; // desconta os 3 iniciais + cabeça
+                if (score < 0) score = 0;
+                text_drawf(WINDOW_WIDTH / 2.0f, 40,  1, 1, 1, 1, 1.0f, 1.0f, "Score: %d", score);
             }
+            break;
 
-            float dx = (float)(mouse_x - debug_last_x) * debug_cam.sensitivity;
-            float dy = (float)(debug_last_y - mouse_y)  * debug_cam.sensitivity;
-            debug_last_x = mouse_x; debug_last_y = mouse_y;
-
-            debug_cam.yaw   += dx;
-            debug_cam.pitch += dy;
-            if (debug_cam.pitch >  1.5f) debug_cam.pitch =  1.5f;
-            if (debug_cam.pitch < -1.5f) debug_cam.pitch = -1.5f;
-
-            vec3  fwd  = camera_get_forward(&debug_cam);
-            vec3  right = camera_get_right(&debug_cam);
-            float vel  = debug_cam.speed * dt;
-
-            if (input_get_key(GLFW_KEY_W))
-                debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ fwd.x*vel, fwd.y*vel, fwd.z*vel });
-            if (input_get_key(GLFW_KEY_S))
-                debug_cam.position = vec3_subtract(&debug_cam.position, &(vec3){ fwd.x*vel, fwd.y*vel, fwd.z*vel });
-            if (input_get_key(GLFW_KEY_A))
-                debug_cam.position = vec3_subtract(&debug_cam.position, &(vec3){ right.x*vel, right.y*vel, right.z*vel });
-            if (input_get_key(GLFW_KEY_D))
-                debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ right.x*vel, right.y*vel, right.z*vel });
-            if (input_get_key(GLFW_KEY_Q))
-                debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ 0.0f, -vel, 0.0f });
-            if (input_get_key(GLFW_KEY_E))
-                debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ 0.0f,  vel, 0.0f });
-
-            vec3 target = vec3_add(&debug_cam.position, &fwd);
-            view = mat4_look_at(debug_cam.position, target, CAMERA_UP);
-        }
-        else
-        {
-            vec3* snake_head_pos = vec3_array_get(&snake.segments, 0);
-            if (!snake_head_pos)
+            case PAUSE_MENU_MODE:
             {
-                view = mat4_look_at(game_camera.position, vec3_zero(), CAMERA_UP);
+                mat4 view;
+                {
+                    vec3* snake_head_pos = vec3_array_get(&snake.segments, 0);
+                    if (!snake_head_pos)
+                    {
+                        view = mat4_look_at(game_camera.position, vec3_zero(), CAMERA_UP);
+                    }
+                    else
+                    {
+                        vec3 look_target = *snake_head_pos;
+                        view = mat4_look_at(game_camera.position, look_target, snake.current_face_normal);
+                    }
+                }
+
+                glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
+                glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+                game_world_render(&world, shader.id, &view, &projection);
+                snake_render(&snake, &cube, &cube, shader.id, &cube_texture, &view, &projection);
+
+                renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
+                renderer3d_end_batch(&renderer);
+
+                text_draw(
+                    WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - 80.0f,
+                    1, 1, 0.3f, 1, 1.8f, 1.8f, "PAUSED"
+                );
+
+                for (int i = 0; i < pause_max_items; i++)
+                {
+                    vec3 color = pause_selected_item == i ? SELECTED_ITEM_COLOR : NORMAL_ITEM_COLOR;
+                    pause_items_scale[i] = vec2_lerp(
+                        &pause_items_scale[i], &(vec2){ 1.0f, 1.0f }, 0.1f
+                    );
+                    text_draw(
+                        WINDOW_WIDTH / 2.0f,
+                        WINDOW_HEIGHT / 2.0f + (i - 0) * 50.0f,
+                        color.x, color.y, color.z, 1.0f,
+                        pause_items_scale[i].x, pause_items_scale[i].y,
+                        PAUSE_OPTIONS[i]
+                    );
+                }
+
+                if (input_get_key_down(GLFW_KEY_W))
+                {
+                    pause_selected_item--;
+                    if (pause_selected_item < 0)
+                        pause_selected_item = pause_max_items - 1;
+                    pause_items_scale[pause_selected_item] = (vec2){ 1.5f, 1.5f };
+                }
+
+                if (input_get_key_down(GLFW_KEY_S))
+                {
+                    pause_selected_item++;
+                    if (pause_selected_item > pause_max_items - 1)
+                        pause_selected_item = 0;
+                    pause_items_scale[pause_selected_item] = (vec2){ 1.5f, 1.5f };
+                }
+
+                if (input_get_key_down(GLFW_KEY_ENTER))
+                {
+                    switch (pause_selected_item)
+                    {
+                        case 0:
+                            game_mode = GAME_MODE;
+                        break;
+
+                        case 1:
+                            game_mode = MAIN_MENU_MODE;
+                            main_menu_selected_item = 0;
+                        break;
+                    }
+                }
+
+                if (input_get_key_down(GLFW_KEY_ESCAPE))
+                    game_mode = GAME_MODE;
             }
-            else
-            {
-                // Direção oposta ao movimento da cobra (atrás da cabeça)
-                vec3 behind = vec3_negate(&snake.head_forward);
-                behind = vec3_normalize(&behind);
-
-                // Posição da câmera: atrás da cabeça + um pouco acima
-                vec3 camera_offset = vec3_multiply_scalar(&behind, 8.0f);
-                vec3 up_offset = vec3_multiply_scalar(&snake.current_face_normal, 4.0f);
-                vec3 target_position = vec3_add(snake_head_pos, &camera_offset);
-                target_position = vec3_add(&target_position, &up_offset);
-
-                // Suaviza a posição da câmera
-                game_camera.position = vec3_lerp(&game_camera.position, &target_position, 0.08f);
-
-                // Alvo: a cabeça da cobra
-                vec3 look_target = *snake_head_pos;
-
-                // Suaviza o alvo (look-at) para evitar movimentos bruscos
-                static vec3 smooth_target = {0};
-                smooth_target = vec3_lerp(&smooth_target, &look_target, 0.15f);
-
-                view = mat4_look_at(game_camera.position, smooth_target, snake.current_face_normal);
-            }
+            break;
         }
+        
 
-        // ----------------------------------------------------------------
-        // render
-        // ----------------------------------------------------------------
-
-        glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        game_world_render(&world, shader.id, &view, &projection);
-        snake_render(&snake, &cube, &cube, shader.id, &cube_texture, &view, &projection);
-
-        renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
-
-        renderer3d_end_batch(&renderer);
+        
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -2213,6 +2896,7 @@ int main()
     renderer3d_destroy(&renderer);
     snake_free(&snake);
     game_object_array_free(&(world.objects));
+    text_renderer_destroy();
     glfwTerminate();
     return 0;
 }

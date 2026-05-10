@@ -177,30 +177,6 @@ src/main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/jogo_psel_fog.dir/build.make CMakeFiles/jogo_psel_fog.dir/src/main.c.s
 .PHONY : src/main.c.s
 
-src/stb_image.o: src/stb_image.c.o
-.PHONY : src/stb_image.o
-
-# target to build an object file
-src/stb_image.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/jogo_psel_fog.dir/build.make CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.o
-.PHONY : src/stb_image.c.o
-
-src/stb_image.i: src/stb_image.c.i
-.PHONY : src/stb_image.i
-
-# target to preprocess a source file
-src/stb_image.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/jogo_psel_fog.dir/build.make CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.i
-.PHONY : src/stb_image.c.i
-
-src/stb_image.s: src/stb_image.c.s
-.PHONY : src/stb_image.s
-
-# target to generate assembly for a file
-src/stb_image.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/jogo_psel_fog.dir/build.make CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.s
-.PHONY : src/stb_image.c.s
-
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -216,9 +192,6 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
-	@echo "... src/stb_image.o"
-	@echo "... src/stb_image.i"
-	@echo "... src/stb_image.s"
 .PHONY : help
 
 

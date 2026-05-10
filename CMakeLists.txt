@@ -12,7 +12,6 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 set(SOURCES
     src/main.c
     src/glad.c
-    src/stb_image.c
 )
 
 # Find and link GLFW
