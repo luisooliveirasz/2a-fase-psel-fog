@@ -1391,241 +1391,6 @@ void vec3_array_clear(vec3_array_t* arr)
     arr->size = 0;
 }
 
-// ------------------------------------------------------------------
-// snake 3d
-// ------------------------------------------------------------------
-
-typedef struct
-{
-    vec3_array_t segments;      // posições dos segmentos (índice 0 = cabeça)
-    vec3          head_forward; // direção de movimento
-    vec3          head_right;   // direção lateral (para rotação nas bordas)
-    vec3          head_up;      // direção para cima
-    vec3          current_face_normal; // normal da face atual
-    float         last_tick;   // tempo do último tick
-    float         tick_interval; // intervalo entre ticks (0.5s)
-    float         cube_size;   // tamanho do cubo onde a cobra se move
-    float         step_size;   // tamanho de cada passo
-    bool          paused;
-} snake_t;
-
-void snake_init(snake_t* snake, float cube_size, float tick_interval)
-{
-    vec3_array_init(&snake->segments, 64);
-    snake->head_forward = (vec3){ 0.0f, 1.0f, 0.0f };
-    snake->head_right   = (vec3){ 1.0f, 0.0f, 0.0f };
-    snake->head_up      = (vec3){ 0.0f, 1.0f, 0.0f };
-    snake->current_face_normal = (vec3){ 0.0f, 0.0f, 1.0f }; // Começa na face frontal
-    snake->last_tick    = 0.0f;
-    snake->tick_interval = tick_interval;
-    snake->cube_size    = cube_size;
-    snake->step_size    = 1.1f;
-    snake->paused = false;
-
-    // Começa no centro da face frontal
-    vec3_array_push(&snake->segments, (vec3){ 0.0f, 0.0f, cube_size / 2.0f });
-}
-
-void snake_free(snake_t* snake)
-{
-    vec3_array_free(&snake->segments);
-}
-
-// Rotaciona um vetor em torno de um eixo por um ângulo
-vec3 vec3_rotate_around_axis(vec3 v, vec3 axis, float angle)
-{
-    float c = cosf(angle);
-    float s = sinf(angle);
-    vec3  n = vec3_normalize(&axis);
-
-    // Fórmula de rotação de Rodrigues
-    vec3 term1 = vec3_multiply_scalar(&v, c);
-    vec3 cross = vec3_cross(&n, &v);
-    vec3 term2 = vec3_multiply_scalar(&cross, s);
-    vec3 dot_vec = vec3_multiply_scalar(&n, vec3_dot(&n, &v));
-    vec3 term3 = vec3_multiply_scalar(&dot_vec, 1.0f - c);
-
-    vec3 result = vec3_add(&term1, &term2);
-    result = vec3_add(&result, &term3);
-    return result;
-}
-
-void snake_update(snake_t* snake, float current_time)
-{
-    if (snake->paused)
-    {
-        return;
-    }
-    // ------------------------------------------------------------
-    // entrada do usuário (com restrições)
-    // ------------------------------------------------------------
-    vec3 forward = snake->head_forward;
-    vec3 normal  = snake->current_face_normal;
-    vec3 right   = vec3_cross(&normal, &forward);
-    right = vec3_normalize(&right);
-
-    vec3 new_forward = forward; // começa com a direção atual
-
-    // Calcula a nova direção proposta com base na tecla pressionada
-    if (input_get_key_down(GLFW_KEY_A))
-        new_forward = vec3_rotate_around_axis(new_forward, normal,  PI/2.0f);
-    if (input_get_key_down(GLFW_KEY_D))
-        new_forward = vec3_rotate_around_axis(new_forward, normal, -PI/2.0f);
-    if (input_get_key_down(GLFW_KEY_W))
-        new_forward = vec3_rotate_around_axis(new_forward, right,   PI/2.0f);
-    if (input_get_key_down(GLFW_KEY_S))
-        new_forward = vec3_rotate_around_axis(new_forward, right,  -PI/2.0f);
-
-    new_forward = vec3_normalize(&new_forward);
-
-    // 1) Impede meia-volta (ângulo > 90° em relação à direção atual)
-    float dot_fwd = vec3_dot(&forward, &new_forward);
-    if (dot_fwd < -0.9f) {
-        // inversão bloqueada, mantém a direção atual
-        new_forward = forward;
-    }
-
-    // 2) Garante que a nova direção não aponte para dentro/fora da face
-    float dot_norm = vec3_dot(&normal, &new_forward);
-    if (fabsf(dot_norm) > 0.01f) {
-        // teria componente normal – o que não deveria acontecer – bloqueia
-        new_forward = forward;
-    }
-
-    // Aplica a mudança (se houve alguma válida)
-    snake->head_forward = new_forward;
-
-    // ------------------------------------------------------------
-    // tick de movimento (apenas a cada intervalo)
-    // ------------------------------------------------------------
-    if (current_time - snake->last_tick < snake->tick_interval)
-        return;
-    snake->last_tick = current_time;
-
-    // ------------------------------------------------------------
-    // calcula nova posição da cabeça
-    // ------------------------------------------------------------
-    vec3* head = &snake->segments.data[0];
-    vec3 delta = vec3_multiply_scalar(&snake->head_forward, snake->step_size);
-    vec3 new_head = vec3_add(head, &delta);
-
-    // ------------------------------------------------------------
-    // detecção de borda e transição entre faces
-    // ------------------------------------------------------------
-    float half = snake->cube_size * 0.5f + 1;
-    int   hit_axis = -1;          // eixo que ultrapassou o limite (-1 = nenhum)
-    int   hit_sign = 0;           // +1 ou -1
-
-    if      (fabsf(new_head.x) > half) { hit_axis = 0; hit_sign = (new_head.x > 0) ? 1 : -1; }
-    else if (fabsf(new_head.y) > half) { hit_axis = 1; hit_sign = (new_head.y > 0) ? 1 : -1; }
-    else if (fabsf(new_head.z) > half) { hit_axis = 2; hit_sign = (new_head.z > 0) ? 1 : -1; }
-
-    if (hit_axis != -1)
-    {
-        // Volta para a posição atual (ainda dentro do cubo)
-        new_head = *head;
-
-        // Determina o eixo da borda (aquele que NÃO é o eixo de saída)
-        // Ex: se saiu pelo eixo X, a borda está no plano YZ → eixo da borda = Y ou Z?
-        // Na verdade, para uma face com normal (1,0,0), a aresta superior (Y=+half) tem direção Z.
-        // Precisamos do eixo que é paralelo à borda.
-        vec3 edge_axis;       // eixo de rotação (direção da aresta)
-        vec3 new_normal;      // normal da nova face
-        float angle;          // ângulo de rotação (sinal definido pela regra da mão direita)
-
-        // Normal da face atual
-        vec3 old_normal = snake->current_face_normal;
-
-        if (hit_axis == 0)   // saiu pelos limites X
-        {
-            // Nova face: X = ±half → normal = (±1, 0, 0)
-            new_normal = (vec3){ (float)hit_sign, 0.0f, 0.0f };
-            // A aresta é paralela ao eixo Y ou Z? A direção do movimento projetada na nova face.
-            // Para simplificar, o eixo de rotação é aquele perpendicular tanto à normal antiga quanto à nova.
-            edge_axis = vec3_cross(&old_normal, &new_normal);
-            edge_axis = vec3_normalize(&edge_axis);
-        }
-        else if (hit_axis == 1) // saiu pelos limites Y
-        {
-            new_normal = (vec3){ 0.0f, (float)hit_sign, 0.0f };
-            edge_axis = vec3_cross(&old_normal, &new_normal);
-            edge_axis = vec3_normalize(&edge_axis);
-        }
-        else // hit_axis == 2 (limites Z)
-        {
-            new_normal = (vec3){ 0.0f, 0.0f, (float)hit_sign };
-            edge_axis = vec3_cross(&old_normal, &new_normal);
-            edge_axis = vec3_normalize(&edge_axis);
-        }
-
-        // O ângulo de rotação é sempre 90°, mas o sinal é dado pela direção do eixo
-        // calculado acima (já que a regra da mão direita determina o sentido).
-        angle = PI / 2.0f;
-
-        // Rotaciona a direção forward e a normal para a nova face
-        snake->head_forward = vec3_rotate_around_axis(snake->head_forward, edge_axis, angle);
-        snake->current_face_normal = vec3_rotate_around_axis(snake->current_face_normal, edge_axis, angle);
-
-        // Normaliza
-        snake->head_forward = vec3_normalize(&snake->head_forward);
-        snake->current_face_normal = vec3_normalize(&snake->current_face_normal);
-
-        // Recalcula os vetores auxiliares (right e up)
-        vec3 new_right = vec3_cross(&snake->current_face_normal, &snake->head_forward);
-        snake->head_right = vec3_normalize(&new_right);
-        // "up" é a normal da face
-        snake->head_up = snake->current_face_normal;
-
-        // Recalcula a nova posição após a rotação (já que a direção mudou)
-        delta = vec3_multiply_scalar(&snake->head_forward, snake->step_size);
-        new_head = vec3_add(head, &delta);
-    }
-
-    // ------------------------------------------------------------
-    // move o corpo da cobra (arrasta os segmentos)
-    // ------------------------------------------------------------
-    for (int i = snake->segments.size - 1; i > 0; i--)
-        snake->segments.data[i] = snake->segments.data[i-1];
-
-    snake->segments.data[0] = new_head;
-}
-
-void snake_grow(snake_t* snake)
-{
-    // Duplica o último segmento para crescer
-    if (snake->segments.size > 0)
-    {
-        vec3* tail = vec3_array_get(&snake->segments, snake->segments.size - 1);
-        vec3_array_push(&snake->segments, *tail);
-    }
-}
-
-void snake_render(snake_t* snake, mesh_t* head_mesh, mesh_t* body_mesh, GLuint shader, texture_t* texture, mat4* view, mat4* projection)
-{
-    for (int i = 0; i < snake->segments.size; i++)
-    {
-        vec3* pos = vec3_array_get(&snake->segments, i);
-        if (!pos) continue;
-
-        mat4 model = mat4_identity();
-
-        // Escala: cabeça = 0.8, corpo = 0.6
-        float scale = (i == 0) ? 0.8f : 0.6f;
-        model.m[0]  = scale;
-        model.m[5]  = scale;
-        model.m[10] = scale;
-
-        // Posição
-        model.m[12] = pos->x;
-        model.m[13] = pos->y;
-        model.m[14] = pos->z;
-
-        mesh_t* mesh = (i == 0) ? head_mesh : body_mesh;
-        vec3 blend_color = (i == 0) ? (vec3){ 1.0f, 0.2f, 0.2f } : (vec3){ 0.2f, 0.8f, 0.2f };
-
-        renderer3d_draw_mesh(mesh, shader, &model, view, projection, texture, &blend_color);
-    }
-}
 
 // ------------------------------------------------------------------
 // game world
@@ -1791,6 +1556,291 @@ int sign(int n)
 // ------------------------------------------------------------------
 // snake
 // ------------------------------------------------------------------
+
+typedef struct
+{
+    vec3_array_t segments;      // posições dos segmentos (índice 0 = cabeça)
+    vec3          head_forward; // direção de movimento
+    vec3          head_right;   // direção lateral (para rotação nas bordas)
+    vec3          head_up;      // direção para cima
+    vec3          current_face_normal; // normal da face atual
+    float         last_tick;   // tempo do último tick
+    float         tick_interval; // intervalo entre ticks (0.5s)
+    float         cube_size;   // tamanho do cubo onde a cobra se move
+    float         step_size;   // tamanho de cada passo
+    bool          paused;
+} snake_t;
+
+void snake_init(snake_t* snake, float cube_size, float tick_interval)
+{
+    vec3_array_init(&snake->segments, 64);
+    snake->head_forward = (vec3){ 0.0f, 1.0f, 0.0f };
+    snake->head_right   = (vec3){ 1.0f, 0.0f, 0.0f };
+    snake->head_up      = (vec3){ 0.0f, 1.0f, 0.0f };
+    snake->current_face_normal = (vec3){ 0.0f, 0.0f, 1.0f }; // Começa na face frontal
+    snake->last_tick    = 0.0f;
+    snake->tick_interval = tick_interval;
+    snake->cube_size    = cube_size;
+    snake->step_size    = 1.1f;
+    snake->paused = false;
+
+    // Começa no centro da face frontal
+    vec3_array_push(&snake->segments, (vec3){ 0.0f, 0.0f, cube_size / 2.0f });
+}
+
+void snake_free(snake_t* snake)
+{
+    vec3_array_free(&snake->segments);
+}
+
+// Rotaciona um vetor em torno de um eixo por um ângulo
+vec3 vec3_rotate_around_axis(vec3 v, vec3 axis, float angle)
+{
+    float c = cosf(angle);
+    float s = sinf(angle);
+    vec3  n = vec3_normalize(&axis);
+
+    // Fórmula de rotação de Rodrigues
+    vec3 term1 = vec3_multiply_scalar(&v, c);
+    vec3 cross = vec3_cross(&n, &v);
+    vec3 term2 = vec3_multiply_scalar(&cross, s);
+    vec3 dot_vec = vec3_multiply_scalar(&n, vec3_dot(&n, &v));
+    vec3 term3 = vec3_multiply_scalar(&dot_vec, 1.0f - c);
+
+    vec3 result = vec3_add(&term1, &term2);
+    result = vec3_add(&result, &term3);
+    return result;
+}
+
+void snake_update(snake_t* snake, float current_time)
+{
+    if (snake->paused)
+    {
+        return;
+    }
+
+    vec3 forward = snake->head_forward;
+    vec3 normal  = snake->current_face_normal;
+    vec3 right   = vec3_cross(&normal, &forward);
+    right = vec3_normalize(&right);
+
+    vec3 new_forward = forward;
+
+    if (input_get_key_down(GLFW_KEY_A))
+        new_forward = vec3_rotate_around_axis(new_forward, normal,  PI/2.0f);
+    if (input_get_key_down(GLFW_KEY_D))
+        new_forward = vec3_rotate_around_axis(new_forward, normal, -PI/2.0f);
+    if (input_get_key_down(GLFW_KEY_W))
+        new_forward = vec3_rotate_around_axis(new_forward, right,   PI/2.0f);
+    if (input_get_key_down(GLFW_KEY_S))
+        new_forward = vec3_rotate_around_axis(new_forward, right,  -PI/2.0f);
+
+    new_forward = vec3_normalize(&new_forward);
+
+    float dot_fwd = vec3_dot(&forward, &new_forward);
+    if (dot_fwd < -0.9f) {
+        new_forward = forward;
+    }
+
+    float dot_norm = vec3_dot(&normal, &new_forward);
+    if (fabsf(dot_norm) > 0.01f) {
+        new_forward = forward;
+    }
+
+    snake->head_forward = new_forward;
+
+    if (current_time - snake->last_tick < snake->tick_interval)
+        return;
+    snake->last_tick = current_time;
+
+    vec3* head = &snake->segments.data[0];
+    vec3 delta = vec3_multiply_scalar(&snake->head_forward, snake->step_size);
+    vec3 new_head = vec3_add(head, &delta);
+
+    float half = snake->cube_size * 0.5f + 1;
+    int   hit_axis = -1;
+    int   hit_sign = 0;
+
+    if      (fabsf(new_head.x) > half) { hit_axis = 0; hit_sign = (new_head.x > 0) ? 1 : -1; }
+    else if (fabsf(new_head.y) > half) { hit_axis = 1; hit_sign = (new_head.y > 0) ? 1 : -1; }
+    else if (fabsf(new_head.z) > half) { hit_axis = 2; hit_sign = (new_head.z > 0) ? 1 : -1; }
+
+    if (hit_axis != -1)
+    {
+        new_head = *head;
+
+        vec3 edge_axis;
+        vec3 new_normal;
+        float angle;
+
+        vec3 old_normal = snake->current_face_normal;
+
+        if (hit_axis == 0)
+        {
+            new_normal = (vec3){ (float)hit_sign, 0.0f, 0.0f };
+            edge_axis = vec3_cross(&old_normal, &new_normal);
+            edge_axis = vec3_normalize(&edge_axis);
+        }
+        else if (hit_axis == 1)
+        {
+            new_normal = (vec3){ 0.0f, (float)hit_sign, 0.0f };
+            edge_axis = vec3_cross(&old_normal, &new_normal);
+            edge_axis = vec3_normalize(&edge_axis);
+        }
+        else
+        {
+            new_normal = (vec3){ 0.0f, 0.0f, (float)hit_sign };
+            edge_axis = vec3_cross(&old_normal, &new_normal);
+            edge_axis = vec3_normalize(&edge_axis);
+        }
+
+        angle = PI / 2.0f;
+
+        snake->head_forward = vec3_rotate_around_axis(snake->head_forward, edge_axis, angle);
+        snake->current_face_normal = vec3_rotate_around_axis(snake->current_face_normal, edge_axis, angle);
+
+        snake->head_forward = vec3_normalize(&snake->head_forward);
+        snake->current_face_normal = vec3_normalize(&snake->current_face_normal);
+
+        vec3 new_right = vec3_cross(&snake->current_face_normal, &snake->head_forward);
+        snake->head_right = vec3_normalize(&new_right);
+        snake->head_up = snake->current_face_normal;
+
+        delta = vec3_multiply_scalar(&snake->head_forward, snake->step_size);
+        new_head = vec3_add(head, &delta);
+    }
+
+    for (int i = snake->segments.size - 1; i > 0; i--)
+    {
+        snake->segments.data[i] = snake->segments.data[i-1];
+    }
+
+    snake->segments.data[0] = new_head;
+
+    //
+
+    
+}
+
+void snake_grow(snake_t* snake)
+{
+    if (snake->segments.size > 0)
+    {
+        vec3* tail = vec3_array_get(&snake->segments, snake->segments.size - 1);
+        vec3_array_push(&snake->segments, *tail);
+    }
+}
+
+void snake_render(snake_t* snake, mesh_t* head_mesh, mesh_t* body_mesh, GLuint shader, texture_t* texture, mat4* view, mat4* projection)
+{
+    for (int i = 0; i < snake->segments.size; i++)
+    {
+        vec3* pos = vec3_array_get(&snake->segments, i);
+        if (!pos) continue;
+
+        mat4 model = mat4_identity();
+
+        float scale = (i == 0) ? 0.8f : 0.6f;
+        model.m[0]  = scale;
+        model.m[5]  = scale;
+        model.m[10] = scale;
+
+        // Posição
+        model.m[12] = pos->x;
+        model.m[13] = pos->y;
+        model.m[14] = pos->z;
+
+        mesh_t* mesh = (i == 0) ? head_mesh : body_mesh;
+        vec3 blend_color = (i == 0) ? (vec3){ 1.0f, 0.2f, 0.2f } : (vec3){ 0.2f, 0.8f, 0.2f };
+
+        renderer3d_draw_mesh(mesh, shader, &model, view, projection, texture, &blend_color);
+    }
+}
+
+// ------------------------------------------------------------------
+// gerador de maças
+// ------------------------------------------------------------------
+
+bool apple_exists = false;
+
+const vec3 NORMAL_VECTORS[6] = {
+    (vec3){  1.0f,  0.0f,  0.0f },
+    (vec3){ -1.0f,  0.0f,  0.0f },
+    (vec3){  0.0f,  1.0f,  0.0f },
+    (vec3){  0.0f, -1.0f,  0.0f },
+    (vec3){  0.0f,  0.0f,  1.0f },
+    (vec3){  0.0f,  0.0f, -1.0f },
+};
+
+const vec3 RIGHT_VECTORS[6] = {
+    (vec3){  0.0f,  0.0f, -1.0f },
+    (vec3){  0.0f,  0.0f,  1.0f },
+    (vec3){  1.0f,  0.0f,  0.0f },
+    (vec3){  1.0f,  0.0f,  0.0f },
+    (vec3){  1.0f,  0.0f,  0.0f },
+    (vec3){ -1.0f,  0.0f,  0.0f },
+};
+
+const vec3 FORWARD_VECTORS[6] = {
+    (vec3){  0.0f,  1.0f,  0.0f },
+    (vec3){  0.0f,  1.0f,  0.0f },
+    (vec3){  0.0f,  0.0f,  1.0f },
+    (vec3){  0.0f,  0.0f, -1.0f },
+    (vec3){  0.0f,  1.0f,  0.0f },
+    (vec3){  0.0f,  1.0f,  0.0f },
+};
+
+int apple_create(game_world_t* world, mesh_t* apple_mesh, snake_t* snake)
+{
+    game_object_t apple;
+    vec3 candidate;
+    bool valid;
+    int max_attempts = 200;
+
+    do {
+        valid = true;
+        int vector_index = rand_int(0, 5);
+        int x = rand_int(-4, 4);
+        int y = rand_int(-4, 4);
+
+        candidate = vec3_multiply_scalar(&NORMAL_VECTORS[vector_index], 5.5f);
+        candidate = vec3_subtract(&candidate, &(vec3){ 0.0f, 0.0f, 0.5f });
+
+        vec3 right_position   = vec3_multiply_scalar(&RIGHT_VECTORS[vector_index],   1.1f * x);
+        vec3 forward_position = vec3_multiply_scalar(&FORWARD_VECTORS[vector_index], 1.1f * y);
+
+        candidate = vec3_add(&candidate, &right_position);
+        candidate = vec3_add(&candidate, &forward_position);
+
+        // Checa colisão com cada segmento da cobra
+        for (int i = 0; i < snake->segments.size; i++)
+        {
+            vec3* seg = vec3_array_get(&snake->segments, i);
+            if (!seg) continue;
+
+            float dx = seg->x - candidate.x;
+            float dy = seg->y - candidate.y;
+            float dz = seg->z - candidate.z;
+            float dist_sq = dx*dx + dy*dy + dz*dz;
+
+            if (dist_sq < 1.0f)
+            {
+                valid = false;
+                break;
+            }
+        }
+
+        max_attempts--;
+    } while (!valid && max_attempts > 0);
+
+    apple = game_object_create();
+    apple.transform.position = candidate;
+    apple.mesh    = apple_mesh;
+    apple.texture = NULL;
+
+    int apple_id = game_world_add(world, apple);
+    return apple_id;
+}
 
 // ------------------------------------------------------------------
 // callbacks
@@ -1978,6 +2028,10 @@ int main()
     snake_init(&snake, 10.0f, 0.15f);
     snake_grow(&snake);
     snake_grow(&snake);
+    snake_grow(&snake);
+
+    int apple_id = apple_create(&world, &cube_no_tex, &snake);
+    game_object_t* apple = game_world_get_object(&world, apple_id);
 
     // ------------------------------------------------------------------
     // câmera debug (TAB)
@@ -2010,6 +2064,23 @@ int main()
         float dt = time_delta();
 
         snake_update(&snake, time_total());
+
+        vec3* head = vec3_array_get(&snake.segments, 0);
+        if (head)
+        {
+
+            float dx = apple->transform.position.x - head->x;
+            float dy = apple->transform.position.y - head->y;
+            float dz = apple->transform.position.z - head->z;
+            float dist_sq = dx*dx + dy*dy + dz*dz;
+
+            if (dist_sq < 1.2f)
+            {
+                game_world_remove(&world, apple_id);
+                snake_grow(&snake);
+                apple_create(&world, &cube_no_tex, &snake);
+            }
+        }
 
         if (input_get_key(GLFW_KEY_ESCAPE))
         {
