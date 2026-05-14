@@ -192,9 +192,7 @@ jogo_psel_fog: /usr/lib/Scrt1.o \
   /usr/lib/libmvec.so.1 \
   /usr/lib/libxcb.so.1 \
   CMakeFiles/jogo_psel_fog.dir/src/glad.c.o \
-  CMakeFiles/jogo_psel_fog.dir/src/main.c.o \
-  CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.o \
-  CMakeFiles/jogo_psel_fog.dir/src/stb_truetype.c.o
+  CMakeFiles/jogo_psel_fog.dir/src/main.c.o
 
 
 /usr/lib/libc.so.6:
@@ -355,8 +353,6 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
 
 /usr/include/bits/long-double.h:
 
-CMakeFiles/jogo_psel_fog.dir/src/stb_truetype.c.o:
-
 /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/mm_malloc.h:
 
 /usr/include/bits/libc-header-start.h:
@@ -438,8 +434,6 @@ CMakeFiles/jogo_psel_fog.dir/src/stb_truetype.c.o:
 /usr/include/dlfcn.h:
 
 /usr/include/features.h:
-
-CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.o:
 
 /usr/include/math.h:
 

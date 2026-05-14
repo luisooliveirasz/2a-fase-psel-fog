@@ -196,6 +196,4 @@ jogo_psel_fog
  /usr/lib/libxcb.so.1
  /home/luis/Dev/jogo_psel_fog/build/CMakeFiles/jogo_psel_fog.dir/src/glad.c.o
  /home/luis/Dev/jogo_psel_fog/build/CMakeFiles/jogo_psel_fog.dir/src/main.c.o
- /home/luis/Dev/jogo_psel_fog/build/CMakeFiles/jogo_psel_fog.dir/src/stb_image.c.o
- /home/luis/Dev/jogo_psel_fog/build/CMakeFiles/jogo_psel_fog.dir/src/stb_truetype.c.o
 
