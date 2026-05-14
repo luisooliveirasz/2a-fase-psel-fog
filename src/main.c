@@ -173,7 +173,8 @@ typedef struct { float m[16];      } mat4;
 
 #define LIGHTS_NUMBER 6
 
-typedef struct {
+typedef struct
+{
     vec3 direction;
     vec3 color;
 } dir_light_t;
@@ -828,17 +829,18 @@ void renderer3d_draw_mesh(mesh_t* mesh, GLuint shader_id, mat4* model,
     set_uniform_vec3(shader_id, "u_blend_color", blend_color);
     set_uniform_float(shader_id, "u_alpha",      alpha);
 
+    // sempre limpa slots antes
+    for (int i = 0; i < 16; i++)
+    {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+
     if (texture && texture->id != 0)
     {
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture->id);
         glUniform1i(glGetUniformLocation(shader_id, "u_textures[1]"), 1);
-    }
-    else
-    {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glUniform1i(glGetUniformLocation(shader_id, "u_textures[0]"), 0);
     }
 
     mesh_draw(mesh);
@@ -1938,7 +1940,7 @@ void snake_render(snake_t* snake, mesh_t* head_mesh, mesh_t* body_mesh, GLuint s
         model.m[14] = pos->z;
 
         mesh_t* mesh = (i == 0) ? head_mesh : body_mesh;
-        vec3 blend_color = (i == 0) ? (vec3){ 1.0f, 0.2f, 0.2f } : (vec3){ 0.2f, 0.8f, 0.2f };
+        vec3 blend_color = (i == 0) ? (vec3){ 1.0f, 1.0f, 1.0f } : (vec3){ 1.0f, 1.0f, 1.0f };
 
         renderer3d_draw_mesh(mesh, shader, &model, view, projection, texture, &blend_color, 1.0f);
     }
@@ -1977,12 +1979,14 @@ const vec3 FORWARD_VECTORS[6] = {
     (vec3){  0.0f,  1.0f,  0.0f },
 };
 
-int apple_create(game_world_t* world, mesh_t* apple_mesh, snake_t* snake)
+int apple_create(game_world_t* world, mesh_t* apple_mesh, texture_t* apple_texture, snake_t* snake)
 {
     game_object_t apple;
     vec3 candidate;
     bool valid;
     int max_attempts = 200;
+
+    vec3 normal = NORMAL_VECTORS[0];
 
     do
     {
@@ -2017,13 +2021,24 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, snake_t* snake)
             }
         }
 
+        if (valid)
+        {
+            normal = NORMAL_VECTORS[vector_index];
+        }
+
         max_attempts--;
     } while (!valid && max_attempts > 0);
 
     apple = game_object_create();
+
+    apple.transform.scale = (vec3){ 0.66f, 0.66f, 0.66f };
     apple.transform.position = candidate;
+
+    vec3 a = vec3_multiply_scalar(&normal, 0.5f);
+    apple.transform.position = vec3_add(&apple.transform.position, &a);
+
     apple.mesh    = apple_mesh;
-    apple.texture = NULL;
+    apple.texture = apple_texture;
 
     int apple_id = game_world_add(world, apple);
     return apple_id;
@@ -2509,7 +2524,14 @@ int main()
     mesh_t cube_no_tex = mesh_create(cube_no_tex_verts, 24, cube_indices, 36);
 
     texture_t cube_texture = texture_load("box.jpg");
+    texture_t snake_texture = texture_load("snake.png");
     texture_t logo_texture = texture_load("logo.png");
+
+    model_asset_t apple_model = model_asset_load("apple.obj", "apple.jpeg", 1.0f);
+    
+    
+
+    
 
     // ------------------------------------------------------------------
     // cria o cubo
@@ -2533,7 +2555,7 @@ int main()
                 game_object_t block = game_object_create();
                 block.mesh = &cube_no_tex;
                 block.texture = NULL;
-                block.blend_color = (vec3){ 1.0, 0.7, 0.5 };
+                block.blend_color = (vec3){ 0.5f, 0.5f, 0.5f };
                 block.alpha = 0.5f;
 
                 vec3 scale = (vec3){ 1.0, 1.0, 1.0 };
@@ -2575,7 +2597,7 @@ int main()
     snake_grow(&snake);
     snake_grow(&snake);
 
-    int apple_id = apple_create(&world, &cube_no_tex, &snake);
+    int apple_id = apple_create(&world, &apple_model.mesh, &apple_model.texture, &snake);
     game_object_t* apple = game_world_get_object(&world, apple_id);
 
     // ------------------------------------------------------------------
@@ -2680,7 +2702,7 @@ int main()
                             snake_grow(&snake);
                             snake_grow(&snake);
                             game_world_remove(&world, apple_id);
-                            apple_id = apple_create(&world, &cube_no_tex, &snake);
+                            apple_id = apple_create(&world, &apple_model.mesh, &apple_model.texture, &snake);
                             apple = game_world_get_object(&world, apple_id);
                             game_mode = GAME_MODE;
                         break;
@@ -2695,6 +2717,14 @@ int main()
                         break;
                     }
                 }
+
+                text_draw(
+                    WINDOW_WIDTH / 2.0f,
+                    WINDOW_HEIGHT - 100.0f,
+                    1, 1, 1, 1,
+                    1.0f, 1.0f,
+                    "*Feito para a 2a fase do processo seletivo do FOG com C puro + OpenGL*"
+                );
             }
             break;
 
@@ -2808,7 +2838,7 @@ int main()
                         {
                             game_world_remove(&world, apple_id);
                             snake_grow(&snake);
-                            apple_id = apple_create(&world, &cube_no_tex, &snake);
+                            apple_id = apple_create(&world, &apple_model.mesh, &apple_model.texture, &snake);
                             apple = game_world_get_object(&world, apple_id);
                         }
                     }
@@ -2833,7 +2863,7 @@ int main()
                         snake_grow(&snake);
                         snake_grow(&snake);
                         game_world_remove(&world, apple_id);
-                        apple_id = apple_create(&world, &cube_no_tex, &snake);
+                        apple_id = apple_create(&world, &apple_model.mesh, &apple_model.texture, &snake);
                         apple = game_world_get_object(&world, apple_id);
                     }
                 }
@@ -2873,7 +2903,7 @@ int main()
 
                 game_world_render_opaque(&world, shader.id, &view, &projection);
 
-                snake_render(&snake, &cube, &cube, shader.id, &cube_texture, &view, &projection);
+                snake_render(&snake, &cube, &cube, shader.id, &snake_texture, &view, &projection);
 
                 game_world_render_transparent(&world, shader.id, &view, &projection, cam_pos);
 
@@ -2923,7 +2953,7 @@ int main()
                     
 
                 game_world_render_opaque(&world, shader.id, &view, &projection);
-                snake_render(&snake, &cube, &cube, shader.id, &cube_texture, &view, &projection);
+                snake_render(&snake, &cube, &cube, shader.id, &snake_texture, &view, &projection);
                 game_world_render_transparent(&world, shader.id, &view, &projection, cam_pos);
 
                 renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
