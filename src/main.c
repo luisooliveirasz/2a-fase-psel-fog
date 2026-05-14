@@ -109,11 +109,13 @@ const char* fragment_src =
     "in vec3  v_frag_pos;\n"
     "in float v_tex_index;\n"
 
-    "uniform vec3        u_light_dir;\n"
-    "uniform vec3        u_light_color;\n"
+    "#define LIGHTS_NUMBER 6\n"
+    "uniform vec3        u_light_dirs[LIGHTS_NUMBER];\n"
+    "uniform vec3        u_light_colors[LIGHTS_NUMBER];\n"
     "uniform sampler2D   u_textures[16];\n"
     "uniform int         u_texture_count;\n"
     "uniform vec3        u_blend_color;\n"
+    "uniform float       u_alpha;\n"
 
     "out vec4 frag_color;\n"
 
@@ -139,18 +141,21 @@ const char* fragment_src =
     
     "void main()\n"
     "{\n"
-    "    float ambient_strength = 0.25;\n"
-    "    vec3  ambient = ambient_strength * u_light_color;\n"
+    "    vec3 norm = normalize(v_normal);\n"
 
-    "    vec3 norm      = normalize(v_normal);\n"
-    "    float diff     = max(dot(norm, u_light_dir), 0.0);\n"
-    "    vec3 diffuse   = diff * u_light_color;\n"
+    "    vec3 ambient = vec3(0.25);\n"
+
+    "    vec3 diffuse = vec3(0.0);\n"
+    "    for (int i = 0; i < LIGHTS_NUMBER; i++) {\n"
+    "        float diff = max(dot(norm, u_light_dirs[i]), 0.0);\n"
+    "        diffuse += diff * u_light_colors[i];\n"
+    "    }\n"
 
     "    int tex_idx = int(v_tex_index);\n"
-    "    vec4 base_color = sample_texture(tex_idx);\n"
+    "    vec4 base_color = sample_texture(tex_idx) * v_color;\n"
 
     "    vec3 final_color = base_color.rgb * (ambient + diffuse) * u_blend_color;\n"
-    "    frag_color = vec4(final_color, base_color.a);\n"
+    "    frag_color = vec4(final_color, u_alpha);\n"
     "}\n";
 
 // ------------------------------------------------------------------
@@ -163,12 +168,25 @@ typedef struct { float x, y;       } vec2;
 typedef struct { float m[16];      } mat4;
 
 // ------------------------------------------------------------------
-// constantes globais
+// iluminação
 // ------------------------------------------------------------------
 
-vec3 MAIN_LIGHT_POS   = (vec3){ 0.0f, 20.0f, -5.0f };
-vec3 MAIN_LIGHT_COLOR = (vec3){ 1.0f,  1.0f,  1.0f };
-vec3 MAIN_LIGHT_DIR = (vec3){ 0.4f, 0.8f, 0.6f };
+#define LIGHTS_NUMBER 6
+
+typedef struct {
+    vec3 direction;
+    vec3 color;
+} dir_light_t;
+
+static dir_light_t g_lights[6] =
+{
+    { .direction = {  1.0f,  0.0f,  0.0f }, .color = { 1.0f, 1.0f, 1.0f } },
+    { .direction = { -1.0f,  0.0f,  0.0f }, .color = { 1.0f, 1.0f, 1.0f } },
+    { .direction = {  0.0f,  1.0f,  0.0f }, .color = { 1.0f, 1.0f, 1.0f } },
+    { .direction = {  0.0f, -1.0f,  0.0f }, .color = { 1.0f, 1.0f, 1.0f } },
+    { .direction = {  0.0f,  0.0f,  1.0f }, .color = { 1.0f, 1.0f, 1.0f } },
+    { .direction = {  0.0f,  0.0f, -1.0f }, .color = { 1.0f, 1.0f, 1.0f } },
+};
 
 // ------------------------------------------------------------------
 // declarações mat4 e vec3
@@ -406,6 +424,11 @@ static void set_uniform_vec3(GLuint prog, const char* name, vec3* v)
 static void set_uniform_int(GLuint prog, const char* name, int v)
 {
     glUniform1i(uniform_loc(prog, name), v);
+}
+
+static void set_uniform_float(GLuint prog, const char* name, float v)
+{
+    glUniform1f(uniform_loc(prog, name), v);
 }
 
 static shader_t compile_shader(const char* vs, const char* fs)
@@ -669,6 +692,25 @@ void renderer3d_flush(renderer3d_t* r)
     glBindVertexArray(0);
 }
 
+void set_lights(GLuint shader_id)
+{
+    char name[64];
+    for (int i = 0; i < LIGHTS_NUMBER; i++)
+    {
+        // direção já normalizada
+        vec3* dir = &g_lights[i].direction;
+
+        snprintf(name, sizeof(name), "u_light_dirs[%d]", i);
+        set_uniform_vec3(shader_id, name, dir);
+
+        snprintf(name, sizeof(name), "u_light_colors[%d]", i);
+        glUniform3f(glGetUniformLocation(shader_id, name),
+                    g_lights[i].color.x,
+                    g_lights[i].color.y,
+                    g_lights[i].color.z);
+    }
+}
+
 void renderer3d_begin_batch(renderer3d_t* r, GLuint shader_id,
                              mat4* view, mat4* projection)
 {
@@ -685,9 +727,11 @@ void renderer3d_begin_batch(renderer3d_t* r, GLuint shader_id,
     glUseProgram(shader_id);
     set_uniform_mat4(shader_id, "u_view",       view);
     set_uniform_mat4(shader_id, "u_projection", projection);
-    set_uniform_vec3(shader_id, "u_light_dir", &MAIN_LIGHT_DIR);
-    set_uniform_vec3(shader_id, "u_light_color", &MAIN_LIGHT_COLOR);
+    
+    set_lights(shader_id);
+
     set_uniform_vec3(shader_id, "u_blend_color", &blend_color);
+    set_uniform_float(shader_id, "u_alpha", 1.0f);
 
     mat4 identity = mat4_identity();
     set_uniform_mat4(shader_id, "u_model", &identity);
@@ -751,7 +795,8 @@ void renderer3d_draw_quad(renderer3d_t* r,
     build_transform_with_normal(transform, position, rotation,
                                 size.x, size.y, normal_local, &world_normal);
 
-    vec2 tex_coords[4] = {
+    vec2 tex_coords[4] =
+    {
         { 0.0f, 0.0f }, { 1.0f, 0.0f },
         { 1.0f, 1.0f }, { 0.0f, 1.0f }
     };
@@ -772,15 +817,16 @@ void renderer3d_draw_quad(renderer3d_t* r,
 
 void renderer3d_draw_mesh(mesh_t* mesh, GLuint shader_id, mat4* model,
                            mat4* view, mat4* projection,
-                           texture_t* texture, vec3* blend_color)
+                           texture_t* texture, vec3* blend_color,
+                           float alpha)
 {
     glUseProgram(shader_id);
     set_uniform_mat4(shader_id, "u_model",       model);
     set_uniform_mat4(shader_id, "u_view",        view);
     set_uniform_mat4(shader_id, "u_projection",  projection);
-    set_uniform_vec3(shader_id, "u_light_dir", &MAIN_LIGHT_DIR);
-    set_uniform_vec3(shader_id, "u_light_color",&MAIN_LIGHT_COLOR);
+    set_lights(shader_id);
     set_uniform_vec3(shader_id, "u_blend_color", blend_color);
+    set_uniform_float(shader_id, "u_alpha",      alpha);
 
     if (texture && texture->id != 0)
     {
@@ -824,7 +870,8 @@ typedef struct
     mesh_t*     mesh;
     texture_t*  texture;
     vec3        blend_color;
-    int         tag;           // OBJECT_TAG_*
+    int         tag;
+    float alpha;
 } game_object_t;
 
 game_object_t game_object_create()
@@ -836,6 +883,7 @@ game_object_t game_object_create()
     o.mesh          = NULL;
     o.texture       = NULL;
     o.blend_color   = vec3_from_scalar(1.0);
+    o.alpha = 1.0f;
     return o;
 }
 
@@ -1215,9 +1263,11 @@ mat4 mat4_rotate(mat4* mat, vec3* axis, float angle)
 mat4 mat4_scale(mat4* mat, vec3* vec)
 {
     mat4 s = mat4_identity();
+    
     s.m[0]  = vec->x;
     s.m[5]  = vec->y;
     s.m[10] = vec->z;
+
     return mat4_multiply(mat, &s);
 }
 
@@ -1225,12 +1275,14 @@ mat4 mat4_perspective(float fov, float aspect, float near, float far)
 {
     mat4 result;
     memset(result.m, 0, sizeof(result.m));
+
     float f = 1.0f / tanf(fov * 0.5f);
     result.m[0]  = f / aspect;
     result.m[5]  = f;
     result.m[10] = -(far + near) / (far - near);
     result.m[11] = -1.0f;
     result.m[14] = -(2.0f * far * near) / (far - near);
+
     return result;
 }
 
@@ -1255,10 +1307,16 @@ mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up)
         f.z*up.x-f.x*up.z,
         f.x*up.y-f.y*up.x
     };
+
     float sl = sqrtf(s.x*s.x + s.y*s.y + s.z*s.z);
     s.x /= sl; s.y /= sl; s.z /= sl;
 
-    vec3 u = { s.y*f.z-s.z*f.y, s.z*f.x-s.x*f.z, s.x*f.y-s.y*f.x };
+    vec3 u =
+    {
+        s.y*f.z-s.z*f.y,
+        s.z*f.x-s.x*f.z,
+        s.x*f.y-s.y*f.x
+    };
 
     result.m[0]  =  s.x;
     result.m[4]  =  s.y;
@@ -1561,68 +1619,87 @@ void game_world_update(game_world_t* world, float dt)
     }
 }
 
-void game_world_render(game_world_t* world, GLuint shader, mat4* view, mat4* projection)
+void game_world_render_opaque(game_world_t* world, GLuint shader, mat4* view, mat4* projection)
 {
-    // Primeiro renderiza objetos opacos
+    glDepthMask(GL_TRUE);
     for (int i = 0; i < world->objects.size; i++)
     {
         game_object_t* obj = &world->objects.data[i];
         if (!obj->mesh) continue;
+        if (obj->alpha < 0.999f) continue;
 
-        // Verifica se o objeto é transparente
-        // Os cubos têm alpha = 0.5 nos vértices, então são transparentes
-        bool is_transparent = true;
-
-        if (is_transparent) continue; // Pula transparentes por agora
-
-        // S
         mat4 model = mat4_identity();
+
         model.m[0]  = obj->transform.scale.x;
         model.m[5]  = obj->transform.scale.y;
         model.m[10] = obj->transform.scale.z;
 
-        // R (Z * Y * X aplicado à esquerda)
         model = mat4_rotate_x(&model, obj->transform.rotation.x);
         model = mat4_rotate_y(&model, obj->transform.rotation.y);
         model = mat4_rotate_z(&model, obj->transform.rotation.z);
 
-        // T
         model.m[12] = obj->transform.position.x;
         model.m[13] = obj->transform.position.y;
         model.m[14] = obj->transform.position.z;
 
-        renderer3d_draw_mesh(obj->mesh, shader, &model, view, projection, obj->texture, &obj->blend_color);
+        renderer3d_draw_mesh(obj->mesh, shader, &model, view, projection,
+                             obj->texture, &obj->blend_color, obj->alpha);
+    }
+}
+
+void game_world_render_transparent(game_world_t* world, GLuint shader, mat4* view, mat4* projection, vec3 camera_pos)
+{
+    #define MAX_TRANS 1024
+    game_object_t* trans[MAX_TRANS];
+    float distances[MAX_TRANS];
+    int trans_count = 0;
+
+    for (int i = 0; i < world->objects.size && trans_count < MAX_TRANS; i++)
+    {
+        game_object_t* obj = &world->objects.data[i];
+        if (!obj->mesh) continue;
+        if (obj->alpha >= 0.999f) continue; // só transparentes
+
+        float dx = obj->transform.position.x - camera_pos.x;
+        float dy = obj->transform.position.y - camera_pos.y;
+        float dz = obj->transform.position.z - camera_pos.z;
+        distances[trans_count] = dx*dx + dy*dy + dz*dz;
+        trans[trans_count++] = obj;
     }
 
-    // Agora renderiza objetos transparentes com depth writing desabilitado
-    glDepthMask(GL_FALSE);
-    for (int i = 0; i < world->objects.size; i++)
+    for (int i = 0; i < trans_count - 1; i++)
     {
-        game_object_t* obj = &world->objects.data[i];
-        if (!obj->mesh) continue;
+        for (int j = i+1; j < trans_count; j++)
+        {
+            if (distances[i] < distances[j])
+            {
+                game_object_t* tmp = trans[i];
+                trans[i] = trans[j];
+                trans[j] = tmp;
+                float d = distances[i];
+                distances[i] = distances[j];
+                distances[j] = d;
+            }
+        }
+    }
 
-        // Verifica se o objeto é transparente
-        bool is_transparent = true;
-
-        if (!is_transparent) continue; // Pula opacos
-
-        // S
+    glDepthMask(GL_FALSE);
+    for (int i = 0; i < trans_count; i++)
+    {
+        game_object_t* obj = trans[i];
         mat4 model = mat4_identity();
         model.m[0]  = obj->transform.scale.x;
         model.m[5]  = obj->transform.scale.y;
         model.m[10] = obj->transform.scale.z;
-
-        // R (Z * Y * X aplicado à esquerda)
         model = mat4_rotate_x(&model, obj->transform.rotation.x);
         model = mat4_rotate_y(&model, obj->transform.rotation.y);
         model = mat4_rotate_z(&model, obj->transform.rotation.z);
-
-        // T
         model.m[12] = obj->transform.position.x;
         model.m[13] = obj->transform.position.y;
         model.m[14] = obj->transform.position.z;
 
-        renderer3d_draw_mesh(obj->mesh, shader, &model, view, projection, obj->texture, &obj->blend_color);
+        renderer3d_draw_mesh(obj->mesh, shader, &model, view, projection,
+                             obj->texture, &obj->blend_color, obj->alpha);
     }
     glDepthMask(GL_TRUE);
 }
@@ -1631,6 +1708,7 @@ game_object_t* game_world_get_object(game_world_t* world, int object_id)
 {
     return game_object_array_get(&world->objects, object_id);
 }
+
 
 // ------------------------------------------------------------------
 // random
@@ -1688,15 +1766,15 @@ int sign(int n)
 
 typedef struct
 {
-    vec3_array_t segments;      // posições dos segmentos (índice 0 = cabeça)
-    vec3          head_forward; // direção de movimento
-    vec3          head_right;   // direção lateral (para rotação nas bordas)
-    vec3          head_up;      // direção para cima
-    vec3          current_face_normal; // normal da face atual
-    float         last_tick;   // tempo do último tick
-    float         tick_interval; // intervalo entre ticks (0.5s)
-    float         cube_size;   // tamanho do cubo onde a cobra se move
-    float         step_size;   // tamanho de cada passo
+    vec3_array_t segments;
+    vec3          head_forward;
+    vec3          head_right;
+    vec3          head_up;
+    vec3          current_face_normal;
+    float         last_tick;
+    float         tick_interval;
+    float         cube_size;
+    float         step_size;
     bool          paused;
 } snake_t;
 
@@ -1722,14 +1800,12 @@ void snake_free(snake_t* snake)
     vec3_array_free(&snake->segments);
 }
 
-// Rotaciona um vetor em torno de um eixo por um ângulo
 vec3 vec3_rotate_around_axis(vec3 v, vec3 axis, float angle)
 {
     float c = cosf(angle);
     float s = sinf(angle);
     vec3  n = vec3_normalize(&axis);
 
-    // Fórmula de rotação de Rodrigues
     vec3 term1 = vec3_multiply_scalar(&v, c);
     vec3 cross = vec3_cross(&n, &v);
     vec3 term2 = vec3_multiply_scalar(&cross, s);
@@ -1744,9 +1820,7 @@ vec3 vec3_rotate_around_axis(vec3 v, vec3 axis, float angle)
 void snake_update(snake_t* snake, float current_time)
 {
     if (snake->paused)
-    {
         return;
-    }
 
     vec3 forward = snake->head_forward;
     vec3 normal  = snake->current_face_normal;
@@ -1766,15 +1840,11 @@ void snake_update(snake_t* snake, float current_time)
 
     new_forward = vec3_normalize(&new_forward);
 
-    float dot_fwd = vec3_dot(&forward, &new_forward);
-    if (dot_fwd < -0.9f) {
+    if (vec3_dot(&forward, &new_forward) < -0.9f)
         new_forward = forward;
-    }
 
-    float dot_norm = vec3_dot(&normal, &new_forward);
-    if (fabsf(dot_norm) > 0.01f) {
+    if (fabsf(vec3_dot(&normal, &new_forward)) > 0.01f)
         new_forward = forward;
-    }
 
     snake->head_forward = new_forward;
 
@@ -1782,67 +1852,59 @@ void snake_update(snake_t* snake, float current_time)
         return;
     snake->last_tick = current_time;
 
-    vec3* head = &snake->segments.data[0];
-    vec3 delta = vec3_multiply_scalar(&snake->head_forward, snake->step_size);
-    vec3 new_head = vec3_add(head, &delta);
+    vec3 head = snake->segments.data[0];
+    float step = snake->step_size;
+    float half = snake->cube_size * 0.5f;
 
-    float half = snake->cube_size * 0.5f + 1;
-    int   hit_axis = -1;
-    int   hit_sign = 0;
+    vec3 new_head = vec3_add(&head, &(vec3){
+        snake->head_forward.x * step,
+        snake->head_forward.y * step,
+        snake->head_forward.z * step
+    });
 
-    if      (fabsf(new_head.x) > half) { hit_axis = 0; hit_sign = (new_head.x > 0) ? 1 : -1; }
-    else if (fabsf(new_head.y) > half) { hit_axis = 1; hit_sign = (new_head.y > 0) ? 1 : -1; }
-    else if (fabsf(new_head.z) > half) { hit_axis = 2; hit_sign = (new_head.z > 0) ? 1 : -1; }
+    int hit_axis = -1;
+    int hit_sign = 0;
+    float hit_coord = 0.0f;
+
+    if      (new_head.x >  half) { hit_axis = 0; hit_sign =  1; hit_coord =  half; }
+    else if (new_head.x < -half) { hit_axis = 0; hit_sign = -1; hit_coord = -half; }
+    else if (new_head.y >  half) { hit_axis = 1; hit_sign =  1; hit_coord =  half; }
+    else if (new_head.y < -half) { hit_axis = 1; hit_sign = -1; hit_coord = -half; }
+    else if (new_head.z >  half) { hit_axis = 2; hit_sign =  1; hit_coord =  half; }
+    else if (new_head.z < -half) { hit_axis = 2; hit_sign = -1; hit_coord = -half; }
 
     if (hit_axis != -1)
     {
-        new_head = *head;
+        if (hit_axis == 0) new_head.x = hit_coord;
+        if (hit_axis == 1) new_head.y = hit_coord;
+        if (hit_axis == 2) new_head.z = hit_coord;
 
-        vec3 edge_axis;
+        float step_size = snake->step_size;
+        if (hit_axis != 0) new_head.x = roundf(new_head.x / step_size) * step_size;
+        if (hit_axis != 1) new_head.y = roundf(new_head.y / step_size) * step_size;
+        if (hit_axis != 2) new_head.z = roundf(new_head.z / step_size) * step_size;
+
         vec3 new_normal;
-        float angle;
+        if (hit_axis == 0) new_normal = (vec3){ (float)hit_sign, 0.0f, 0.0f };
+        if (hit_axis == 1) new_normal = (vec3){ 0.0f, (float)hit_sign, 0.0f };
+        if (hit_axis == 2) new_normal = (vec3){ 0.0f, 0.0f, (float)hit_sign };
 
         vec3 old_normal = snake->current_face_normal;
+        vec3 edge_axis = vec3_cross(&old_normal, &new_normal);
+        edge_axis = vec3_normalize(&edge_axis);
 
-        if (hit_axis == 0)
-        {
-            new_normal = (vec3){ (float)hit_sign, 0.0f, 0.0f };
-            edge_axis = vec3_cross(&old_normal, &new_normal);
-            edge_axis = vec3_normalize(&edge_axis);
-        }
-        else if (hit_axis == 1)
-        {
-            new_normal = (vec3){ 0.0f, (float)hit_sign, 0.0f };
-            edge_axis = vec3_cross(&old_normal, &new_normal);
-            edge_axis = vec3_normalize(&edge_axis);
-        }
-        else
-        {
-            new_normal = (vec3){ 0.0f, 0.0f, (float)hit_sign };
-            edge_axis = vec3_cross(&old_normal, &new_normal);
-            edge_axis = vec3_normalize(&edge_axis);
-        }
+        vec3 rotated_forward = vec3_rotate_around_axis(snake->head_forward, edge_axis, PI/2.0f);
+        rotated_forward = vec3_normalize(&rotated_forward);
 
-        angle = PI / 2.0f;
-
-        snake->head_forward = vec3_rotate_around_axis(snake->head_forward, edge_axis, angle);
-        snake->current_face_normal = vec3_rotate_around_axis(snake->current_face_normal, edge_axis, angle);
-
-        snake->head_forward = vec3_normalize(&snake->head_forward);
-        snake->current_face_normal = vec3_normalize(&snake->current_face_normal);
-
-        vec3 new_right = vec3_cross(&snake->current_face_normal, &snake->head_forward);
-        snake->head_right = vec3_normalize(&new_right);
-        snake->head_up = snake->current_face_normal;
-
-        delta = vec3_multiply_scalar(&snake->head_forward, snake->step_size);
-        new_head = vec3_add(head, &delta);
+        snake->head_forward = rotated_forward;
+        snake->current_face_normal = new_normal;
+        snake->head_right = vec3_cross(&new_normal, &rotated_forward);
+        snake->head_right = vec3_normalize(&snake->head_right);
+        snake->head_up = new_normal;
     }
 
     for (int i = snake->segments.size - 1; i > 0; i--)
-    {
-        snake->segments.data[i] = snake->segments.data[i-1];
-    }
+        snake->segments.data[i] = snake->segments.data[i - 1];
 
     snake->segments.data[0] = new_head;
 }
@@ -1878,7 +1940,7 @@ void snake_render(snake_t* snake, mesh_t* head_mesh, mesh_t* body_mesh, GLuint s
         mesh_t* mesh = (i == 0) ? head_mesh : body_mesh;
         vec3 blend_color = (i == 0) ? (vec3){ 1.0f, 0.2f, 0.2f } : (vec3){ 0.2f, 0.8f, 0.2f };
 
-        renderer3d_draw_mesh(mesh, shader, &model, view, projection, texture, &blend_color);
+        renderer3d_draw_mesh(mesh, shader, &model, view, projection, texture, &blend_color, 1.0f);
     }
 }
 
@@ -1922,15 +1984,15 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, snake_t* snake)
     bool valid;
     int max_attempts = 200;
 
-    do {
+    do
+    {
         valid = true;
         int vector_index = rand_int(0, 5);
+        
         int x = rand_int(-4, 4);
         int y = rand_int(-4, 4);
 
-        candidate = vec3_multiply_scalar(&NORMAL_VECTORS[vector_index], 5.5f);
-        vec3 inward = vec3_multiply_scalar(&NORMAL_VECTORS[vector_index], -0.5f);
-        candidate = vec3_add(&candidate, &inward);
+        candidate = vec3_multiply_scalar(&NORMAL_VECTORS[vector_index], snake->cube_size * 0.5f);
 
         vec3 right_position   = vec3_multiply_scalar(&RIGHT_VECTORS[vector_index],   1.1f * x);
         vec3 forward_position = vec3_multiply_scalar(&FORWARD_VECTORS[vector_index], 1.1f * y);
@@ -1938,7 +2000,6 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, snake_t* snake)
         candidate = vec3_add(&candidate, &right_position);
         candidate = vec3_add(&candidate, &forward_position);
 
-        // Checa colisão com cada segmento da cobra
         for (int i = 0; i < snake->segments.size; i++)
         {
             vec3* seg = vec3_array_get(&snake->segments, i);
@@ -1976,7 +2037,7 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, snake_t* snake)
 #define TEXT_ATLAS_H     512
 #define TEXT_FIRST_CHAR  32
 #define TEXT_CHAR_COUNT  96
-#define TEXT_MAX_CHARS   1024  // máximo de chars por draw call
+#define TEXT_MAX_CHARS   1024
  
 // ------------------------------------------------------------------
 // shaders 2D internos
@@ -2015,24 +2076,19 @@ typedef struct {
 } text_vertex_t;
  
 typedef struct {
-    // GPU
     GLuint vao, vbo, ibo;
     GLuint shader;
     GLuint atlas_tex;
  
-    // font data
     stbtt_bakedchar cdata[TEXT_CHAR_COUNT];
  
-    // batch
     text_vertex_t* verts;   // TEXT_MAX_CHARS * 4 vértices
     uint32_t*      indices; // TEXT_MAX_CHARS * 6 índices
     int            quad_count;
  
-    // tela
     int screen_w, screen_h;
 } text_renderer_t;
  
-// instância global (pode ser ponteiro se preferir)
 static text_renderer_t g_text;
  
 // ------------------------------------------------------------------
@@ -2428,12 +2484,32 @@ int main()
         16,17,18, 18,19,16,  20,21,22, 22,23,20,
     };
 
+    // logo_verts: tex_index = 1.0f em TODOS os vértices
+    vertex3d_t logo_verts[] = {
+        {{-0.5f,-0.5f, 0.5f},{1,0,0,1},{0,0},{0,0,1},  1}, {{ 0.5f,-0.5f, 0.5f},{1,0,0,1},{1,0},{0,0,1},  1},
+        {{ 0.5f, 0.5f, 0.5f},{1,0,0,1},{1,1},{0,0,1},  1}, {{-0.5f, 0.5f, 0.5f},{1,0,0,1},{0,1},{0,0,1},  1},
+        {{-0.5f,-0.5f,-0.5f},{0,1,0,1},{0,0},{0,0,-1}, 1}, {{ 0.5f,-0.5f,-0.5f},{0,1,0,1},{1,0},{0,0,-1}, 1},
+        {{ 0.5f, 0.5f,-0.5f},{0,1,0,1},{1,1},{0,0,-1}, 1}, {{-0.5f, 0.5f,-0.5f},{0,1,0,1},{0,1},{0,0,-1}, 1},
+        {{-0.5f,-0.5f,-0.5f},{0,0,1,1},{0,0},{-1,0,0}, 1}, {{-0.5f,-0.5f, 0.5f},{0,0,1,1},{1,0},{-1,0,0}, 1},
+        {{-0.5f, 0.5f, 0.5f},{0,0,1,1},{1,1},{-1,0,0}, 1}, {{-0.5f, 0.5f,-0.5f},{0,0,1,1},{0,1},{-1,0,0}, 1},
+        {{ 0.5f,-0.5f,-0.5f},{1,1,0,1},{0,0},{1,0,0},  1}, {{ 0.5f,-0.5f, 0.5f},{1,1,0,1},{1,0},{1,0,0},  1},
+        {{ 0.5f, 0.5f, 0.5f},{1,1,0,1},{1,1},{1,0,0},  1}, {{ 0.5f, 0.5f,-0.5f},{1,1,0,1},{0,1},{1,0,0},  1},
+        {{-0.5f,-0.5f,-0.5f},{0,1,1,1},{0,0},{0,-1,0}, 1}, {{ 0.5f,-0.5f,-0.5f},{0,1,1,1},{1,0},{0,-1,0}, 1},
+        {{ 0.5f,-0.5f, 0.5f},{0,1,1,1},{1,1},{0,-1,0}, 1}, {{-0.5f,-0.5f, 0.5f},{0,1,1,1},{0,1},{0,-1,0}, 1},
+        {{-0.5f, 0.5f,-0.5f},{1,0,1,1},{0,0},{0,1,0},  1}, {{ 0.5f, 0.5f,-0.5f},{1,0,1,1},{1,0},{0,1,0},  1},
+        {{ 0.5f, 0.5f, 0.5f},{1,0,1,1},{1,1},{0,1,0},  1}, {{-0.5f, 0.5f, 0.5f},{1,0,1,1},{0,1},{0,1,0},  1},
+    };
+    float logo_angle = 0.0f;
+    mesh_t logo_cube = mesh_create(logo_verts, 24, cube_indices, 36);
+
     game_world_t world;
     game_world_init(&world);
 
     mesh_t cube = mesh_create(cube_verts, 24, cube_indices, 36);
     mesh_t cube_no_tex = mesh_create(cube_no_tex_verts, 24, cube_indices, 36);
+
     texture_t cube_texture = texture_load("box.jpg");
+    texture_t logo_texture = texture_load("logo.png");
 
     // ------------------------------------------------------------------
     // cria o cubo
@@ -2458,6 +2534,7 @@ int main()
                 block.mesh = &cube_no_tex;
                 block.texture = NULL;
                 block.blend_color = (vec3){ 1.0, 0.7, 0.5 };
+                block.alpha = 0.5f;
 
                 vec3 scale = (vec3){ 1.0, 1.0, 1.0 };
                 vec3 block_position;
@@ -2481,7 +2558,7 @@ int main()
                 
                 block.transform.scale = scale;
 
-                block.transform.position = vec3_subtract(&block_position, &(vec3){ 0.0f, 0.0f, 0.5f });
+                block.transform.position = block_position;
 
                 game_world_add(&world, block);
             }
@@ -2521,6 +2598,9 @@ int main()
     static double debug_last_x    = 0.0, debug_last_y = 0.0;
     static int    debug_first_mouse = 1;
 
+    bool game_over = false;
+    float game_over_timer = 0.0f;
+
     // ------------------------------------------------------------------
     // loop principal
     // ------------------------------------------------------------------
@@ -2538,10 +2618,25 @@ int main()
                 glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                text_draw(
-                    WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f - 120.0f,
-                    1, 1, 1, 1, 2.0f, 2.0f, "SNAKE 3D"
-                );
+                logo_angle += dt * 1.2f;
+
+                mat4 logo_model = mat4_identity();
+
+                vec3 logo_scale = (vec3){ 1.8f, 1.8f, 1.8f };
+                logo_model = mat4_scale(&logo_model, &logo_scale);
+
+                vec3 axis = (vec3){ 0.0f, -0.8f, -0.2f };
+                logo_model = mat4_rotate(&logo_model, &axis, logo_angle);
+
+                logo_model.m[12] = 0.0f;
+                logo_model.m[13] = 1.5f;
+                logo_model.m[14] = -6.0f;
+
+                mat4 logo_proj = mat4_perspective(PI / 3.0f, (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 200.0f);
+                mat4 logo_view = mat4_look_at((vec3){0,0,0}, (vec3){0,0,-1}, (vec3){0,1,0});
+                vec3 white = (vec3){1, 1, 1};
+
+                renderer3d_draw_mesh(&logo_cube, shader.id, &logo_model, &logo_view, &logo_proj, &logo_texture, &white, 1.0f);
 
                 for (int i = 0; i < main_menu_max_items; i++)
                 {
@@ -2551,7 +2646,7 @@ int main()
                     );
                     text_draw(
                         WINDOW_WIDTH / 2.0f,
-                        WINDOW_HEIGHT / 2.0f + (i - 1) * 50.0f,
+                        WINDOW_HEIGHT / 2.0f + (i - 1) * 50.0f + 130.0f,
                         color.x, color.y, color.z, 1.0f,
                         main_menu_items_scale[i].x, main_menu_items_scale[i].y,
                         MAIN_MENU_OPTIONS[i]
@@ -2674,89 +2769,79 @@ int main()
                 if (input_get_key_down(GLFW_KEY_ESCAPE))
                 {
                     pause_selected_item = 0;
-                    pause_items_scale[0] = (vec2){ 1.0f, 1.0f };
-                    pause_items_scale[1] = (vec2){ 1.0f, 1.0f };
                     game_mode = PAUSE_MENU_MODE;
                     break;
                 }
 
-                snake_update(&snake, time_total());
-
-                vec3* head = vec3_array_get(&snake.segments, 0);
-                if (head && apple)
+                if (!game_over)
                 {
-                    float dx = apple->transform.position.x - head->x;
-                    float dy = apple->transform.position.y - head->y;
-                    float dz = apple->transform.position.z - head->z;
-                    float dist_sq = dx*dx + dy*dy + dz*dz;
+                    snake_update(&snake, time_total());
 
-                    if (dist_sq < 1.2f)
+                    vec3* head = vec3_array_get(&snake.segments, 0);
+                    bool collision = false;
+                    for (int i = 1; i < snake.segments.size; i++)
                     {
-                        game_world_remove(&world, apple_id);
+                        vec3* seg = vec3_array_get(&snake.segments, i);
+                        float dx = head->x - seg->x;
+                        float dy = head->y - seg->y;
+                        float dz = head->z - seg->z;
+                        if (dx*dx + dy*dy + dz*dz < 0.25f)
+                        {
+                            collision = true;
+                            break;
+                        }
+                    }
+
+
+                    if (collision)
+                    {
+                        game_over = true;
+                        game_over_timer = 2.0f;
+                    }
+
+                    if (head && apple)
+                    {
+                        float dx = apple->transform.position.x - head->x;
+                        float dy = apple->transform.position.y - head->y;
+                        float dz = apple->transform.position.z - head->z;
+                        if (dx*dx + dy*dy + dz*dz < 1.2f)
+                        {
+                            game_world_remove(&world, apple_id);
+                            snake_grow(&snake);
+                            apple_id = apple_create(&world, &cube_no_tex, &snake);
+                            apple = game_world_get_object(&world, apple_id);
+                        }
+                    }
+
+                    if (input_get_key_down(GLFW_KEY_CAPS_LOCK))
+                        snake.paused = !snake.paused;
+
+                    if (input_get_key_down(GLFW_KEY_TAB))
+                        camera_free = !camera_free;
+
+                    game_world_update(&world, dt);
+                }
+                else
+                {
+                    game_over_timer -= dt;
+                    if (game_over_timer <= 0.0f)
+                    {
+                        game_over = false;
+                        snake_free(&snake);
+                        snake_init(&snake, 10.0f, 0.15f);
                         snake_grow(&snake);
+                        snake_grow(&snake);
+                        snake_grow(&snake);
+                        game_world_remove(&world, apple_id);
                         apple_id = apple_create(&world, &cube_no_tex, &snake);
                         apple = game_world_get_object(&world, apple_id);
                     }
                 }
 
-                if (input_get_key_down(GLFW_KEY_CAPS_LOCK))
-                    snake.paused = !snake.paused;
-
-                if (input_get_key_down(GLFW_KEY_TAB))
-                {
-                    camera_free = !camera_free;
-                    if (camera_free)
-                    {
-                        debug_cam.last_position = debug_cam.position;
-                        debug_first_mouse = 1;
-                    }
-                }
-
-                game_world_update(&world, dt);
-
                 mat4 view;
-
                 if (camera_free)
                 {
-                    double mouse_x, mouse_y;
-                    input_get_mouse_position(&mouse_x, &mouse_y);
 
-                    if (debug_first_mouse)
-                    {
-                        debug_last_x = mouse_x;
-                        debug_last_y = mouse_y;
-                        debug_first_mouse = 0;
-                    }
-
-                    float dx = (float)(mouse_x - debug_last_x) * debug_cam.sensitivity;
-                    float dy = (float)(debug_last_y - mouse_y)  * debug_cam.sensitivity;
-                    debug_last_x = mouse_x;
-                    debug_last_y = mouse_y;
-
-                    debug_cam.yaw   += dx;
-                    debug_cam.pitch += dy;
-                    if (debug_cam.pitch >  1.5f) debug_cam.pitch =  1.5f;
-                    if (debug_cam.pitch < -1.5f) debug_cam.pitch = -1.5f;
-
-                    vec3  fwd   = camera_get_forward(&debug_cam);
-                    vec3  right = camera_get_right(&debug_cam);
-                    float vel   = debug_cam.speed * dt;
-
-                    if (input_get_key(GLFW_KEY_W))
-                        debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ fwd.x*vel, fwd.y*vel, fwd.z*vel });
-                    if (input_get_key(GLFW_KEY_S))
-                        debug_cam.position = vec3_subtract(&debug_cam.position, &(vec3){ fwd.x*vel, fwd.y*vel, fwd.z*vel });
-                    if (input_get_key(GLFW_KEY_A))
-                        debug_cam.position = vec3_subtract(&debug_cam.position, &(vec3){ right.x*vel, right.y*vel, right.z*vel });
-                    if (input_get_key(GLFW_KEY_D))
-                        debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ right.x*vel, right.y*vel, right.z*vel });
-                    if (input_get_key(GLFW_KEY_Q))
-                        debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ 0.0f, -vel, 0.0f });
-                    if (input_get_key(GLFW_KEY_E))
-                        debug_cam.position = vec3_add(&debug_cam.position, &(vec3){ 0.0f,  vel, 0.0f });
-
-                    vec3 target = vec3_add(&debug_cam.position, &fwd);
-                    view = mat4_look_at(debug_cam.position, target, CAMERA_UP);
                 }
                 else
                 {
@@ -2769,18 +2854,14 @@ int main()
                     {
                         vec3 behind = vec3_negate(&snake.head_forward);
                         behind = vec3_normalize(&behind);
-
                         vec3 camera_offset = vec3_multiply_scalar(&behind, 8.0f);
                         vec3 up_offset     = vec3_multiply_scalar(&snake.current_face_normal, 4.0f);
                         vec3 target_pos    = vec3_add(snake_head_pos, &camera_offset);
                         target_pos         = vec3_add(&target_pos, &up_offset);
-
                         game_camera.position = vec3_lerp(&game_camera.position, &target_pos, 0.08f);
-
                         vec3 look_target = *snake_head_pos;
                         static vec3 smooth_target = {0};
                         smooth_target = vec3_lerp(&smooth_target, &look_target, 0.15f);
-
                         view = mat4_look_at(game_camera.position, smooth_target, snake.current_face_normal);
                     }
                 }
@@ -2788,15 +2869,25 @@ int main()
                 glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                game_world_render(&world, shader.id, &view, &projection);
+                vec3 cam_pos = camera_free ? debug_cam.position : game_camera.position;
+
+                game_world_render_opaque(&world, shader.id, &view, &projection);
+
                 snake_render(&snake, &cube, &cube, shader.id, &cube_texture, &view, &projection);
+
+                game_world_render_transparent(&world, shader.id, &view, &projection, cam_pos);
 
                 renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
                 renderer3d_end_batch(&renderer);
 
-                int score = snake.segments.size - 4; // desconta os 3 iniciais + cabeça
+                int score = snake.segments.size - 4;
                 if (score < 0) score = 0;
-                text_drawf(WINDOW_WIDTH / 2.0f, 40,  1, 1, 1, 1, 1.0f, 1.0f, "Score: %d", score);
+                text_drawf(WINDOW_WIDTH / 2.0f, 40, 1, 1, 1, 1, 1.0f, 1.0f, "Score: %d", score);
+
+                if (game_over)
+                {
+                    text_draw(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f, 1.0f, 0.2f, 0.2f, 1.0f, 2.0f, 2.0f, "GAME OVER");
+                }
             }
             break;
 
@@ -2819,8 +2910,21 @@ int main()
                 glClearColor(0.05f, 0.05f, 0.1f, 1.0f);
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-                game_world_render(&world, shader.id, &view, &projection);
+                vec3 cam_pos;
+
+                if (camera_free)
+                {
+                    cam_pos = debug_cam.position;
+                }
+                else
+                {
+                    cam_pos = game_camera.position;
+                }
+                    
+
+                game_world_render_opaque(&world, shader.id, &view, &projection);
                 snake_render(&snake, &cube, &cube, shader.id, &cube_texture, &view, &projection);
+                game_world_render_transparent(&world, shader.id, &view, &projection, cam_pos);
 
                 renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
                 renderer3d_end_batch(&renderer);
@@ -2848,16 +2952,24 @@ int main()
                 if (input_get_key_down(GLFW_KEY_W))
                 {
                     pause_selected_item--;
+
                     if (pause_selected_item < 0)
+                    {
                         pause_selected_item = pause_max_items - 1;
+                    }
+                    
                     pause_items_scale[pause_selected_item] = (vec2){ 1.5f, 1.5f };
                 }
 
                 if (input_get_key_down(GLFW_KEY_S))
                 {
                     pause_selected_item++;
+
                     if (pause_selected_item > pause_max_items - 1)
+                    {
                         pause_selected_item = 0;
+                    }
+                        
                     pause_items_scale[pause_selected_item] = (vec2){ 1.5f, 1.5f };
                 }
 
