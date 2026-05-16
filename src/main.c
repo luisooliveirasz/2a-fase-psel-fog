@@ -116,6 +116,9 @@ const char* fragment_src =
     "uniform int         u_texture_count;\n"
     "uniform vec3        u_blend_color;\n"
     "uniform float       u_alpha;\n"
+    "uniform vec3        u_view_pos;\n"
+    "uniform float       u_specular_strength;\n"
+    "uniform float       u_shininess;\n"
 
     "out vec4 frag_color;\n"
 
@@ -138,23 +141,32 @@ const char* fragment_src =
     "    if (idx == 15) return texture(u_textures[15], v_tex_coord);\n"
     "    return vec4(1.0, 0.0, 1.0, 1.0);\n"
     "}\n"
-    
+
     "void main()\n"
     "{\n"
-    "    vec3 norm = normalize(v_normal);\n"
+    "    vec3 norm     = normalize(v_normal);\n"
+    "    vec3 view_dir = normalize(u_view_pos - v_frag_pos);\n"
 
-    "    vec3 ambient = vec3(0.25);\n"
+    "    vec3 ambient  = vec3(0.25);\n"
 
-    "    vec3 diffuse = vec3(0.0);\n"
+    "    vec3 diffuse  = vec3(0.0);\n"
+    "    vec3 specular = vec3(0.0);\n"
     "    for (int i = 0; i < LIGHTS_NUMBER; i++) {\n"
-    "        float diff = max(dot(norm, u_light_dirs[i]), 0.0);\n"
+    "        vec3 light_dir = normalize(u_light_dirs[i]);\n"
+
+    "        float diff = max(dot(norm, light_dir), 0.0);\n"
     "        diffuse += diff * u_light_colors[i];\n"
+
+    "        vec3  half_dir = normalize(light_dir + view_dir);\n"
+    "        float spec     = pow(max(dot(norm, half_dir), 0.0), u_shininess);\n"
+    "        specular += spec * u_specular_strength * u_light_colors[i];\n"
     "    }\n"
 
-    "    int tex_idx = int(v_tex_index);\n"
+    "    int  tex_idx   = int(v_tex_index);\n"
     "    vec4 base_color = sample_texture(tex_idx) * v_color;\n"
 
-    "    vec3 final_color = base_color.rgb * (ambient + diffuse) * u_blend_color;\n"
+    "    vec3 final_color = base_color.rgb * (ambient + diffuse) * u_blend_color\n"
+    "                     + specular * u_blend_color;\n"
     "    frag_color = vec4(final_color, u_alpha);\n"
     "}\n";
 
@@ -482,6 +494,13 @@ shader_t shader_create_from_src(const char* vs, const char* fs)
     return compile_shader(vs, fs);
 }
 
+void set_specular(GLuint shader_id, vec3* view_pos, float strength, float shininess)
+{
+    set_uniform_vec3 (shader_id, "u_view_pos",          view_pos);
+    set_uniform_float(shader_id, "u_specular_strength", strength);
+    set_uniform_float(shader_id, "u_shininess",         shininess);
+}
+
 // ------------------------------------------------------------------
 // vertex / mesh
 // ------------------------------------------------------------------
@@ -713,7 +732,7 @@ void set_lights(GLuint shader_id)
 }
 
 void renderer3d_begin_batch(renderer3d_t* r, GLuint shader_id,
-                             mat4* view, mat4* projection)
+                             mat4* view, mat4* projection, vec3* cam_pos)
 {
     r->index_count        = 0;
     r->vertex_buffer_ptr  = r->vertex_buffer_base;
@@ -730,13 +749,13 @@ void renderer3d_begin_batch(renderer3d_t* r, GLuint shader_id,
     set_uniform_mat4(shader_id, "u_projection", projection);
     
     set_lights(shader_id);
+    set_specular(shader_id, cam_pos, 0.5f, 32.0f);
 
     set_uniform_vec3(shader_id, "u_blend_color", &blend_color);
     set_uniform_float(shader_id, "u_alpha", 1.0f);
 
     mat4 identity = mat4_identity();
     set_uniform_mat4(shader_id, "u_model", &identity);
-    // sem u_use_texture aqui
 }
 
 void renderer3d_end_batch(renderer3d_t* r)
@@ -754,13 +773,14 @@ void renderer3d_draw_quad(renderer3d_t* r,
                           vec3 normal_local,
                           GLuint texture_id,      // 0 = sem textura
                           vec4 color,
-                          texture_t* texture)     // pode ser NULL
+                          texture_t* texture,
+                          vec3* cam_pos)     // pode ser NULL
 {
     if (r->index_count >= MAX_INDICES)
     {
         renderer3d_end_batch(r);
         renderer3d_begin_batch(r, r->current_shader,
-                               &r->current_view, &r->current_projection);
+                               &r->current_view, &r->current_projection, cam_pos);
     }
 
     // --- registra a textura no slot ---
@@ -783,7 +803,7 @@ void renderer3d_draw_quad(renderer3d_t* r,
             {
                 renderer3d_end_batch(r);
                 renderer3d_begin_batch(r, r->current_shader,
-                                       &r->current_view, &r->current_projection);
+                                       &r->current_view, &r->current_projection, cam_pos);
             }
             tex_index = (float)r->texture_slot_index;
             r->texture_slots[r->texture_slot_index++] = texture->id;
@@ -819,13 +839,14 @@ void renderer3d_draw_quad(renderer3d_t* r,
 void renderer3d_draw_mesh(mesh_t* mesh, GLuint shader_id, mat4* model,
                            mat4* view, mat4* projection,
                            texture_t* texture, vec3* blend_color,
-                           float alpha)
+                           float alpha, vec3* cam_pos)
 {
     glUseProgram(shader_id);
     set_uniform_mat4(shader_id, "u_model",       model);
     set_uniform_mat4(shader_id, "u_view",        view);
     set_uniform_mat4(shader_id, "u_projection",  projection);
     set_lights(shader_id);
+    set_specular(shader_id, cam_pos, 0.5f, 32.0f);
     set_uniform_vec3(shader_id, "u_blend_color", blend_color);
     set_uniform_float(shader_id, "u_alpha",      alpha);
 
@@ -873,7 +894,8 @@ typedef struct
     texture_t*  texture;
     vec3        blend_color;
     int         tag;
-    float alpha;
+    float       alpha;
+    float       anim_phase;
 } game_object_t;
 
 game_object_t game_object_create()
@@ -1621,7 +1643,7 @@ void game_world_update(game_world_t* world, float dt)
     }
 }
 
-void game_world_render_opaque(game_world_t* world, GLuint shader, mat4* view, mat4* projection)
+void game_world_render_opaque(game_world_t* world, GLuint shader, mat4* view, mat4* projection, vec3* cam_pos)
 {
     glDepthMask(GL_TRUE);
     for (int i = 0; i < world->objects.size; i++)
@@ -1645,11 +1667,11 @@ void game_world_render_opaque(game_world_t* world, GLuint shader, mat4* view, ma
         model.m[14] = obj->transform.position.z;
 
         renderer3d_draw_mesh(obj->mesh, shader, &model, view, projection,
-                             obj->texture, &obj->blend_color, obj->alpha);
+                             obj->texture, &obj->blend_color, obj->alpha, cam_pos);
     }
 }
 
-void game_world_render_transparent(game_world_t* world, GLuint shader, mat4* view, mat4* projection, vec3 camera_pos)
+void game_world_render_transparent(game_world_t* world, GLuint shader, mat4* view, mat4* projection, vec3* cam_pos)
 {
     #define MAX_TRANS 1024
     game_object_t* trans[MAX_TRANS];
@@ -1662,9 +1684,9 @@ void game_world_render_transparent(game_world_t* world, GLuint shader, mat4* vie
         if (!obj->mesh) continue;
         if (obj->alpha >= 0.999f) continue; // só transparentes
 
-        float dx = obj->transform.position.x - camera_pos.x;
-        float dy = obj->transform.position.y - camera_pos.y;
-        float dz = obj->transform.position.z - camera_pos.z;
+        float dx = obj->transform.position.x - cam_pos->x;
+        float dy = obj->transform.position.y - cam_pos->y;
+        float dz = obj->transform.position.z - cam_pos->z;
         distances[trans_count] = dx*dx + dy*dy + dz*dz;
         trans[trans_count++] = obj;
     }
@@ -1701,7 +1723,7 @@ void game_world_render_transparent(game_world_t* world, GLuint shader, mat4* vie
         model.m[14] = obj->transform.position.z;
 
         renderer3d_draw_mesh(obj->mesh, shader, &model, view, projection,
-                             obj->texture, &obj->blend_color, obj->alpha);
+                             obj->texture, &obj->blend_color, obj->alpha, cam_pos);
     }
     glDepthMask(GL_TRUE);
 }
@@ -1920,7 +1942,7 @@ void snake_grow(snake_t* snake)
     }
 }
 
-void snake_render(snake_t* snake, mesh_t* head_mesh, mesh_t* body_mesh, GLuint shader, texture_t* texture, mat4* view, mat4* projection)
+void snake_render(snake_t* snake, mesh_t* head_mesh, mesh_t* body_mesh, GLuint shader, texture_t* texture, mat4* view, mat4* projection, vec3* cam_pos)
 {
     for (int i = 0; i < snake->segments.size; i++)
     {
@@ -1942,7 +1964,7 @@ void snake_render(snake_t* snake, mesh_t* head_mesh, mesh_t* body_mesh, GLuint s
         mesh_t* mesh = (i == 0) ? head_mesh : body_mesh;
         vec3 blend_color = (i == 0) ? (vec3){ 1.0f, 1.0f, 1.0f } : (vec3){ 1.0f, 1.0f, 1.0f };
 
-        renderer3d_draw_mesh(mesh, shader, &model, view, projection, texture, &blend_color, 1.0f);
+        renderer3d_draw_mesh(mesh, shader, &model, view, projection, texture, &blend_color, 1.0f, cam_pos);
     }
 }
 
@@ -1987,6 +2009,9 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, texture_t* apple_textu
     int max_attempts = 200;
 
     vec3 normal = NORMAL_VECTORS[0];
+    int  chosen_face = 0;
+
+    apple.anim_phase = rand_float(0.0f, 2.0f * PI);
 
     do
     {
@@ -2023,19 +2048,29 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, texture_t* apple_textu
 
         if (valid)
         {
-            normal = NORMAL_VECTORS[vector_index];
+            normal      = NORMAL_VECTORS[vector_index];
+            chosen_face = vector_index;
         }
 
         max_attempts--;
     } while (!valid && max_attempts > 0);
 
+    static const vec3 FACE_ROTATIONS[6] = {
+        { 0.0f,     0.0f, -PI/2.0f },
+        { 0.0f,     0.0f,  PI/2.0f },
+        { 0.0f,     0.0f,  0.0f    },
+        { 0.0f,     0.0f,  PI      },
+        { PI/2.0f,  0.0f,  0.0f    },
+        {-PI/2.0f,  0.0f,  0.0f    },
+    };
+
     apple = game_object_create();
 
-    apple.transform.scale = (vec3){ 0.66f, 0.66f, 0.66f };
-    apple.transform.position = candidate;
+    apple.transform.scale    = (vec3){ 0.66f, 0.66f, 0.66f };
+    apple.transform.rotation = FACE_ROTATIONS[chosen_face];
 
     vec3 a = vec3_multiply_scalar(&normal, 0.5f);
-    apple.transform.position = vec3_add(&apple.transform.position, &a);
+    apple.transform.position = vec3_add(&candidate, &a);
 
     apple.mesh    = apple_mesh;
     apple.texture = apple_texture;
@@ -2045,7 +2080,7 @@ int apple_create(game_world_t* world, mesh_t* apple_mesh, texture_t* apple_textu
 }
 
 // ------------------------------------------------------------------
-// configuração
+// configuração do texto
 // ------------------------------------------------------------------
  
 #define TEXT_ATLAS_W     512
@@ -2206,8 +2241,8 @@ int text_renderer_init(const char* ttf_path, float font_size, int screen_w, int 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED,
                  TEXT_ATLAS_W, TEXT_ATLAS_H,
                  0, GL_RED, GL_UNSIGNED_BYTE, bitmap);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
     free(bitmap);
  
@@ -2427,7 +2462,7 @@ int main()
         return -1;
     }
 
-    text_renderer_init("arial.ttf", 24.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
+    text_renderer_init("determination.ttf", 36.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -2658,7 +2693,9 @@ int main()
                 mat4 logo_view = mat4_look_at((vec3){0,0,0}, (vec3){0,0,-1}, (vec3){0,1,0});
                 vec3 white = (vec3){1, 1, 1};
 
-                renderer3d_draw_mesh(&logo_cube, shader.id, &logo_model, &logo_view, &logo_proj, &logo_texture, &white, 1.0f);
+                vec3 cam_pos = vec3_zero();
+
+                renderer3d_draw_mesh(&logo_cube, shader.id, &logo_model, &logo_view, &logo_proj, &logo_texture, &white, 1.0f, &cam_pos);
 
                 for (int i = 0; i < main_menu_max_items; i++)
                 {
@@ -2803,6 +2840,12 @@ int main()
                     break;
                 }
 
+                if (apple)
+                {
+                    float t = time_total();
+                    apple->transform.rotation.y += dt * 1.8f;
+                }
+
                 if (!game_over)
                 {
                     snake_update(&snake, time_total());
@@ -2901,18 +2944,18 @@ int main()
 
                 vec3 cam_pos = camera_free ? debug_cam.position : game_camera.position;
 
-                game_world_render_opaque(&world, shader.id, &view, &projection);
+                game_world_render_opaque(&world, shader.id, &view, &projection, &cam_pos);
 
-                snake_render(&snake, &cube, &cube, shader.id, &snake_texture, &view, &projection);
+                snake_render(&snake, &cube, &cube, shader.id, &snake_texture, &view, &projection, &cam_pos);
 
-                game_world_render_transparent(&world, shader.id, &view, &projection, cam_pos);
+                game_world_render_transparent(&world, shader.id, &view, &projection, &cam_pos);
 
-                renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
+                renderer3d_begin_batch(&renderer, shader.id, &view, &projection, &cam_pos);
                 renderer3d_end_batch(&renderer);
 
                 int score = snake.segments.size - 4;
                 if (score < 0) score = 0;
-                text_drawf(WINDOW_WIDTH / 2.0f, 40, 1, 1, 1, 1, 1.0f, 1.0f, "Score: %d", score);
+                text_drawf(WINDOW_WIDTH / 2.0f, 80.0f, 1, 1, 1, 1, 1.0f, 1.0f, "Score: %d", score);
 
                 if (game_over)
                 {
@@ -2952,11 +2995,11 @@ int main()
                 }
                     
 
-                game_world_render_opaque(&world, shader.id, &view, &projection);
-                snake_render(&snake, &cube, &cube, shader.id, &snake_texture, &view, &projection);
-                game_world_render_transparent(&world, shader.id, &view, &projection, cam_pos);
+                game_world_render_opaque(&world, shader.id, &view, &projection, &cam_pos);
+                snake_render(&snake, &cube, &cube, shader.id, &snake_texture, &view, &projection, &cam_pos);
+                game_world_render_transparent(&world, shader.id, &view, &projection, &cam_pos);
 
-                renderer3d_begin_batch(&renderer, shader.id, &view, &projection);
+                renderer3d_begin_batch(&renderer, shader.id, &view, &projection, &cam_pos);
                 renderer3d_end_batch(&renderer);
 
                 text_draw(

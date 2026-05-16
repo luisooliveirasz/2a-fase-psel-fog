@@ -4,32 +4,32 @@ project(jogo_psel_fog C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
 
-# Include directories
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
-# Source files
 set(SOURCES
     src/main.c
     src/glad.c
 )
 
-# Find and link GLFW
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLFW REQUIRED glfw3)
+# Encontra GLFW usando o modo CONFIG (mais portável)
+find_package(glfw3 CONFIG REQUIRED)
 
-# Create executable
+# Encontra OpenGL
+find_package(OpenGL REQUIRED)
+
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-# Link libraries
+# Desativa SIMD no stb_image.h para Windows
+target_compile_definitions(${PROJECT_NAME} PRIVATE STBI_NO_SIMD)
+
+# Linka as bibliotecas
 target_link_libraries(${PROJECT_NAME}
-    ${GLFW_LIBRARIES}
-    m
-    GL
+    glfw
+    ${OPENGL_LIBRARIES}
 )
 
-# Add include directories from pkg-config
-target_include_directories(${PROJECT_NAME} PRIVATE ${GLFW_INCLUDE_DIRS})
-
-# Add compile flags from pkg-config
-target_compile_options(${PROJECT_NAME} PRIVATE ${GLFW_CFLAGS_OTHER})
+# No Linux, linka a biblioteca matemática (no Windows já está na libc)
+if(UNIX AND NOT APPLE)
+    target_link_libraries(${PROJECT_NAME} m)
+endif()

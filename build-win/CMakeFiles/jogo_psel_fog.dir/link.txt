@@ -1,0 +1,3 @@
+/usr/bin/cmake -E rm -f CMakeFiles/jogo_psel_fog.dir/objects.a
+/usr/bin/x86_64-w64-mingw32-ar qc CMakeFiles/jogo_psel_fog.dir/objects.a @CMakeFiles/jogo_psel_fog.dir/objects1.rsp
+/usr/bin/x86_64-w64-mingw32-gcc --sysroot=/usr/x86_64-w64-mingw32 --sysroot=/usr/x86_64-w64-mingw32 -nostdinc -isystem /usr/x86_64-w64-mingw32/include -isystem /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include -Wall -Wextra -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles/jogo_psel_fog.dir/objects.a -Wl,--no-whole-archive -o jogo_psel_fog.exe -Wl,--out-implib,libjogo_psel_fog.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles/jogo_psel_fog.dir/linkLibs.rsp
