@@ -112,6 +112,9 @@ jogo_psel_fog: CMakeFiles/jogo_psel_fog.dir/src/main.c.o
 jogo_psel_fog: CMakeFiles/jogo_psel_fog.dir/src/glad.c.o
 jogo_psel_fog: CMakeFiles/jogo_psel_fog.dir/build.make
 jogo_psel_fog: CMakeFiles/jogo_psel_fog.dir/compiler_depend.ts
+jogo_psel_fog: /usr/lib/libglfw.so.3.4
+jogo_psel_fog: /usr/lib/libGL.so
+jogo_psel_fog: /usr/lib/libGLU.so
 jogo_psel_fog: CMakeFiles/jogo_psel_fog.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/luis/Dev/jogo_psel_fog/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking C executable jogo_psel_fog"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/jogo_psel_fog.dir/link.txt --verbose=$(VERBOSE)

@@ -66,9 +66,9 @@ CMakeFiles/jogo_psel_fog.dir/src/glad.c.o: /home/luis/Dev/jogo_psel_fog/src/glad
   /usr/include/sys/cdefs.h \
   /usr/include/sys/select.h \
   /usr/include/sys/types.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdarg.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stddef.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdint.h
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdarg.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stddef.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdint.h
 
 CMakeFiles/jogo_psel_fog.dir/src/main.c.o: /home/luis/Dev/jogo_psel_fog/src/main.c \
   /home/luis/Dev/jogo_psel_fog/include/GLFW/glfw3.h \
@@ -157,57 +157,69 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o: /home/luis/Dev/jogo_psel_fog/src/main
   /usr/include/sys/select.h \
   /usr/include/sys/types.h \
   /usr/include/time.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/emmintrin.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/limits.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/mm_malloc.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/mmintrin.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdarg.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdbool.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stddef.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdint.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/syslimits.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/xmmintrin.h
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/limits.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdarg.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdbool.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stddef.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdint.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/syslimits.h
 
 jogo_psel_fog: /usr/lib/Scrt1.o \
   /usr/lib/crti.o \
   /usr/lib/crtn.o \
-  /usr/lib/libGL.so \
+  /usr/lib/libatomic.so \
+  /usr/lib/libatomic_asneeded.so \
   /usr/lib/libc.so \
   /usr/lib/libgcc_s.so \
   /usr/lib/libgcc_s.so.1 \
-  /usr/lib/libglfw.so \
+  /usr/lib/libgcc_s_asneeded.so \
   /usr/lib/libm.so \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/libgcc.a \
   /usr/lib/ld-linux-x86-64.so.2 \
+  /usr/lib/libGL.so \
+  /usr/lib/libGLU.so \
   /usr/lib/libGLX.so.0 \
   /usr/lib/libGLdispatch.so.0 \
+  /usr/lib/libOpenGL.so.0 \
   /usr/lib/libX11.so.6 \
   /usr/lib/libXau.so.6 \
   /usr/lib/libXdmcp.so.6 \
   /usr/lib/libc.so.6 \
   /usr/lib/libc_nonshared.a \
+  /usr/lib/libglfw.so.3.4 \
   /usr/lib/libm.so.6 \
   /usr/lib/libmvec.so.1 \
+  /usr/lib/libstdc++.so.6 \
   /usr/lib/libxcb.so.1 \
   CMakeFiles/jogo_psel_fog.dir/src/glad.c.o \
   CMakeFiles/jogo_psel_fog.dir/src/main.c.o
 
 
+/usr/lib/libxcb.so.1:
+
+/usr/lib/libstdc++.so.6:
+
+/usr/lib/libmvec.so.1:
+
 /usr/lib/libc.so.6:
 
 /usr/lib/libXdmcp.so.6:
 
-/usr/lib/libX11.so.6:
-
 /usr/lib/libGLdispatch.so.0:
+
+/usr/lib/libGLU.so:
+
+/usr/lib/libglfw.so.3.4:
 
 /usr/lib/ld-linux-x86-64.so.2:
 
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtbeginS.o:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/libgcc.a:
 
 /usr/lib/libm.so:
+
+/usr/lib/libgcc_s_asneeded.so:
 
 /usr/lib/libGLX.so.0:
 
@@ -215,29 +227,21 @@ jogo_psel_fog: /usr/lib/Scrt1.o \
 
 /usr/lib/libgcc_s.so:
 
+/usr/lib/libatomic_asneeded.so:
+
+/usr/lib/libatomic.so:
+
 /usr/lib/crtn.o:
 
 CMakeFiles/jogo_psel_fog.dir/src/glad.c.o:
 
-/usr/lib/libglfw.so:
-
 /usr/lib/crti.o:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/xmmintrin.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdbool.h:
-
-/usr/lib/libmvec.so.1:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/mmintrin.h:
-
-/usr/lib/libxcb.so.1:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/limits.h:
 
 /usr/include/time.h:
 
 /usr/include/bits/time.h:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o:
 
 /usr/include/bits/pthread_stack_min.h:
 
@@ -267,15 +271,17 @@ CMakeFiles/jogo_psel_fog.dir/src/glad.c.o:
 
 /home/luis/Dev/jogo_psel_fog/include/GLFW/glfw3.h:
 
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/limits.h:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdint.h:
+
+/usr/lib/libX11.so.6:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stddef.h:
+
 /home/luis/Dev/jogo_psel_fog/src/main.c:
 
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/libgcc.a:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdint.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stddef.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/emmintrin.h:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdarg.h:
 
 /usr/include/bits/types/struct_itimerspec.h:
 
@@ -287,11 +293,11 @@ CMakeFiles/jogo_psel_fog.dir/src/glad.c.o:
 
 /usr/include/sys/cdefs.h:
 
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o:
+
 /usr/include/strings.h:
 
 /usr/include/stdlib.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/crtendS.o:
 
 /usr/include/limits.h:
 
@@ -331,6 +337,8 @@ CMakeFiles/jogo_psel_fog.dir/src/glad.c.o:
 
 /usr/include/bits/select.h:
 
+/usr/lib/libOpenGL.so.0:
+
 /usr/include/bits/types/__fpos64_t.h:
 
 /usr/include/features-time64.h:
@@ -343,6 +351,8 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
 
 /usr/include/bits/endianness.h:
 
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/syslimits.h:
+
 /usr/include/bits/types/__FILE.h:
 
 /usr/include/bits/stdlib-float.h:
@@ -353,13 +363,13 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
 
 /usr/include/bits/long-double.h:
 
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/mm_malloc.h:
-
 /usr/include/bits/libc-header-start.h:
 
 /usr/include/bits/timesize.h:
 
 /usr/include/bits/endian.h:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdbool.h:
 
 /usr/include/bits/types/__sigset_t.h:
 
@@ -378,8 +388,6 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
 /usr/include/bits/math-vector.h:
 
 /usr/include/bits/types/__fpos_t.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/syslimits.h:
 
 /usr/include/bits/wordsize.h:
 
@@ -424,8 +432,6 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
 /usr/include/bits/types/cookie_io_functions_t.h:
 
 /usr/include/endian.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1/include/stdarg.h:
 
 /usr/include/bits/waitstatus.h:
 

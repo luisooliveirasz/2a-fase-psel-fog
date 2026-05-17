@@ -2462,7 +2462,7 @@ int main()
         return -1;
     }
 
-    text_renderer_init("determination.ttf", 36.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
+    text_renderer_init("assets/determination.ttf", 36.0f, WINDOW_WIDTH, WINDOW_HEIGHT);
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -2558,11 +2558,10 @@ int main()
     mesh_t cube = mesh_create(cube_verts, 24, cube_indices, 36);
     mesh_t cube_no_tex = mesh_create(cube_no_tex_verts, 24, cube_indices, 36);
 
-    texture_t cube_texture = texture_load("box.jpg");
-    texture_t snake_texture = texture_load("snake.png");
-    texture_t logo_texture = texture_load("logo.png");
+    texture_t snake_texture = texture_load("assets/snake.png");
+    texture_t logo_texture = texture_load("assets/logo.png");
 
-    model_asset_t apple_model = model_asset_load("apple.obj", "apple.jpeg", 1.0f);
+    model_asset_t apple_model = model_asset_load("assets/apple.obj", "assets/apple.jpeg", 1.0f);
     
     
 

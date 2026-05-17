@@ -20,6 +20,12 @@ find_package(OpenGL REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
+if(MINGW)
+    target_link_options(jogo_psel_fog PRIVATE -static -static-libgcc -static-libstdc++)
+    # Força GLFW estático também (se você tiver um alvo glfw)
+    set(GLFW_BUILD_DLL OFF CACHE BOOL "" FORCE)
+endif()
+
 # Desativa SIMD no stb_image.h para Windows
 target_compile_definitions(${PROJECT_NAME} PRIVATE STBI_NO_SIMD)
 

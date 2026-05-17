@@ -1,1 +1,1 @@
-/usr/bin/cc  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/jogo_psel_fog.dir/link.d CMakeFiles/jogo_psel_fog.dir/src/main.c.o CMakeFiles/jogo_psel_fog.dir/src/glad.c.o -o jogo_psel_fog  -lglfw -lm -lGL
+/usr/bin/cc  -Wall -Wextra -Wl,--dependency-file=CMakeFiles/jogo_psel_fog.dir/link.d CMakeFiles/jogo_psel_fog.dir/src/main.c.o CMakeFiles/jogo_psel_fog.dir/src/glad.c.o -o jogo_psel_fog  /usr/lib/libglfw.so.3.4 /usr/lib/libGL.so /usr/lib/libGLU.so -lm
