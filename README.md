@@ -19,7 +19,7 @@ Feito para a segunda fase do processo seletivo do grupo de extensão Fellowship 
 
 | Tecnologia | Papel no projeto |
 |---|---|
-| **C (C99/C11)** | Linguagem principal - toda a lógica, matemática e estruturas de dados |
+| **C** | Linguagem principal - toda a lógica, matemática e estruturas de dados |
 | **OpenGL 3.3 Core** | API gráfica — renderização de meshes, shaders, texturas |
 | **GLFW** | Criação de janela, contexto OpenGL e captura de input |
 | **GLAD** | Loader das extensões OpenGL |
@@ -29,12 +29,11 @@ Feito para a segunda fase do processo seletivo do grupo de extensão Fellowship 
 
 ## Build (em linux) a partir do código fonte:
 ```bash
-mkdir build
 cd build
 cmake ..
 make
 ```
-(Necessário ter o glfw instalado)
+(Necessário ter o glfw e cmake instalados)
 
 ## Assets utilizados:
 https://sketchfab.com/3d-models/apple-low-poly-76k-9mb-2k-626e626482fd431aa67b685b92fc5fbf
