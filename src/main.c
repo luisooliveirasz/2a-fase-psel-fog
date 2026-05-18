@@ -288,8 +288,10 @@ static void build_rotate_y(float out[16], float a)
 static void build_rotate_z(float out[16], float a)
 {
     mat4_identity_raw(out);
-    out[0] =  cosf(a); out[4] = -sinf(a);
-    out[1] =  sinf(a); out[5] =  cosf(a);
+    out[0] =  cosf(a);
+    out[4] = -sinf(a);
+    out[1] =  sinf(a);
+    out[5] =  cosf(a);
 }
 
 static void build_transform_with_normal(float out[16],
@@ -942,6 +944,7 @@ typedef struct
     int  face_count;
 } obj_data_t;
 
+// bruxaria
 void load_obj(const char* path, obj_data_t* obj)
 {
     FILE* fptr = fopen(path, "r");
@@ -1243,30 +1246,30 @@ mat4 mat4_translate(mat4* mat, vec3* vec)
 mat4 mat4_rotate_x(mat4* mat, float angle)
 {
     mat4 rot = mat4_identity();
-    rot.m[5]  =  cosf(angle);
-    rot.m[9]  = -sinf(angle);
-    rot.m[6]  =  sinf(angle);
-    rot.m[10] =  cosf(angle);
+    rot.m[5] = cosf(angle);
+    rot.m[9] = -sinf(angle);
+    rot.m[6] = sinf(angle);
+    rot.m[10] = cosf(angle);
     return mat4_multiply(mat, &rot);
 }
 
 mat4 mat4_rotate_y(mat4* mat, float angle)
 {
     mat4 rot = mat4_identity();
-    rot.m[0]  =  cosf(angle);
-    rot.m[8]  =  sinf(angle);
-    rot.m[2]  = -sinf(angle);
-    rot.m[10] =  cosf(angle);
+    rot.m[0] = cosf(angle);
+    rot.m[8] = sinf(angle);
+    rot.m[2] = -sinf(angle);
+    rot.m[10] = cosf(angle);
     return mat4_multiply(mat, &rot);
 }
 
 mat4 mat4_rotate_z(mat4* mat, float angle)
 {
     mat4 rot = mat4_identity();
-    rot.m[0] =  cosf(angle);
+    rot.m[0] = cosf(angle);
     rot.m[4] = -sinf(angle);
-    rot.m[1] =  sinf(angle);
-    rot.m[5] =  cosf(angle);
+    rot.m[1] = sinf(angle);
+    rot.m[5] = cosf(angle);
     return mat4_multiply(mat, &rot);
 }
 
@@ -1278,14 +1281,14 @@ mat4 mat4_rotate(mat4* mat, vec3* axis, float angle)
     float t = 1.0f - c;
 
     mat4 rot = mat4_identity();
-    rot.m[0]  = t * n.x * n.x + c;
-    rot.m[1]  = t * n.x * n.y + s * n.z;
-    rot.m[2]  = t * n.x * n.z - s * n.y;
-    rot.m[4]  = t * n.x * n.y - s * n.z;
-    rot.m[5]  = t * n.y * n.y + c;
-    rot.m[6]  = t * n.y * n.z + s * n.x;
-    rot.m[8]  = t * n.x * n.z + s * n.y;
-    rot.m[9]  = t * n.y * n.z - s * n.x;
+    rot.m[0] = t * n.x * n.x + c;
+    rot.m[1] = t * n.x * n.y + s * n.z;
+    rot.m[2] = t * n.x * n.z - s * n.y;
+    rot.m[4] = t * n.x * n.y - s * n.z;
+    rot.m[5] = t * n.y * n.y + c;
+    rot.m[6] = t * n.y * n.z + s * n.x;
+    rot.m[8] = t * n.x * n.z + s * n.y;
+    rot.m[9] = t * n.y * n.z - s * n.x;
     rot.m[10] = t * n.z * n.z + c;
 
     return mat4_multiply(mat, &rot);
@@ -1308,8 +1311,8 @@ mat4 mat4_perspective(float fov, float aspect, float z_near, float z_far)
     memset(result.m, 0, sizeof(result.m));
 
     float f = 1.0f / tanf(fov * 0.5f);
-    result.m[0]  = f / aspect;
-    result.m[5]  = f;
+    result.m[0] = f / aspect;
+    result.m[5] = f;
     result.m[10] = -(z_far + z_near) / (z_far - z_near);
     result.m[11] = -1.0f;
     result.m[14] = -(2.0f * z_far * z_near) / (z_far - z_near);
@@ -1349,19 +1352,19 @@ mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up)
         s.x*f.y-s.y*f.x
     };
 
-    result.m[0]  =  s.x;
-    result.m[4]  =  s.y;
-    result.m[8]  =  s.z;
-    result.m[1]  =  u.x;
-    result.m[5]  =  u.y;
-    result.m[9]  =  u.z;
-    result.m[2]  = -f.x;
-    result.m[6]  = -f.y;
+    result.m[0] =  s.x;
+    result.m[4] =  s.y;
+    result.m[8] =  s.z;
+    result.m[1] =  u.x;
+    result.m[5] =  u.y;
+    result.m[9] =  u.z;
+    result.m[2] = -f.x;
+    result.m[6] = -f.y;
     result.m[10] = -f.z;
     result.m[12] = -(s.x*eye.x + s.y*eye.y + s.z*eye.z);
     result.m[13] = -(u.x*eye.x + u.y*eye.y + u.z*eye.z);
-    result.m[14] =  (f.x*eye.x + f.y*eye.y + f.z*eye.z);
-    result.m[15] =  1.0f;
+    result.m[14] = (f.x*eye.x + f.y*eye.y + f.z*eye.z);
+    result.m[15] = 1.0f;
 
     return result;
 }
@@ -1375,8 +1378,8 @@ bool camera_free = false;
 
 typedef struct
 {
-    vec3  position;
-    vec3  last_position;
+    vec3 position;
+    vec3 last_position;
     float yaw, last_yaw;
     float pitch, last_pitch;
     float speed, sensitivity;
@@ -1397,9 +1400,9 @@ vec3 camera_get_forward(camera* cam)
 
 vec3 camera_get_right(camera* cam)
 {
-    vec3 fwd   = camera_get_forward(cam);
+    vec3 fwd = camera_get_forward(cam);
     vec3 right = vec3_cross(&fwd, (vec3*)&CAMERA_UP);
-    float len  = sqrtf(right.x*right.x + right.y*right.y + right.z*right.z);
+    float len = sqrtf(right.x*right.x + right.y*right.y + right.z*right.z);
     right.x /= len; right.y /= len; right.z /= len;
     return right;
 }
@@ -1486,8 +1489,8 @@ vec2 vec2_lerp(vec2* a, vec2* b, float t)
 typedef struct
 {
     game_object_t* data;
-    int            capacity;
-    int            size;
+    int capacity;
+    int size;
 } game_object_array_t;
 
 void game_object_array_init(game_object_array_t* arr, int initial_capacity)
@@ -1500,9 +1503,9 @@ void game_object_array_init(game_object_array_t* arr, int initial_capacity)
 void game_object_array_free(game_object_array_t* arr)
 {
     free(arr->data);
-    arr->data     = NULL;
+    arr->data = NULL;
     arr->capacity = 0;
-    arr->size     = 0;
+    arr->size = 0;
 }
 
 int game_object_array_push(game_object_array_t* arr, game_object_t obj)
@@ -1517,7 +1520,7 @@ int game_object_array_push(game_object_array_t* arr, game_object_t obj)
             printf("game_object_array: falha ao realocar\n");
             return -1;
         }
-        arr->data     = new_data;
+        arr->data = new_data;
         arr->capacity = new_capacity;
     }
     arr->data[arr->size] = obj;
@@ -1551,23 +1554,23 @@ void game_object_array_clear(game_object_array_t* arr)
 typedef struct
 {
     vec3* data;
-    int   capacity;
-    int   size;
+    int capacity;
+    int size;
 } vec3_array_t;
 
 void vec3_array_init(vec3_array_t* arr, int initial_capacity)
 {
-    arr->data     = malloc(initial_capacity * sizeof(vec3));
+    arr->data = malloc(initial_capacity * sizeof(vec3));
     arr->capacity = initial_capacity;
-    arr->size     = 0;
+    arr->size = 0;
 }
 
 void vec3_array_free(vec3_array_t* arr)
 {
     free(arr->data);
-    arr->data     = NULL;
+    arr->data = NULL;
     arr->capacity = 0;
-    arr->size     = 0;
+    arr->size = 0;
 }
 
 int vec3_array_push(vec3_array_t* arr, vec3 v)
@@ -1661,8 +1664,8 @@ void game_world_render_opaque(game_world_t* world, GLuint shader, mat4* view, ma
 
         mat4 model = mat4_identity();
 
-        model.m[0]  = obj->transform.scale.x;
-        model.m[5]  = obj->transform.scale.y;
+        model.m[0] = obj->transform.scale.x;
+        model.m[5] = obj->transform.scale.y;
         model.m[10] = obj->transform.scale.z;
 
         model = mat4_rotate_x(&model, obj->transform.rotation.x);
@@ -1802,28 +1805,28 @@ int sign(int n)
 typedef struct
 {
     vec3_array_t segments;
-    vec3          head_forward;
-    vec3          head_right;
-    vec3          head_up;
-    vec3          current_face_normal;
-    float         last_tick;
-    float         tick_interval;
-    float         cube_size;
-    float         step_size;
-    bool          paused;
+    vec3 head_forward;
+    vec3 head_right;
+    vec3 head_up;
+    vec3 current_face_normal;
+    float last_tick;
+    float tick_interval;
+    float cube_size;
+    float step_size;
+    bool paused;
 } snake_t;
 
 void snake_init(snake_t* snake, float cube_size, float tick_interval)
 {
     vec3_array_init(&snake->segments, 64);
     snake->head_forward = (vec3){ 0.0f, 1.0f, 0.0f };
-    snake->head_right   = (vec3){ 1.0f, 0.0f, 0.0f };
-    snake->head_up      = (vec3){ 0.0f, 1.0f, 0.0f };
+    snake->head_right = (vec3){ 1.0f, 0.0f, 0.0f };
+    snake->head_up = (vec3){ 0.0f, 1.0f, 0.0f };
     snake->current_face_normal = (vec3){ 0.0f, 0.0f, 1.0f }; // Começa na face frontal
-    snake->last_tick    = 0.0f;
+    snake->last_tick = 0.0f;
     snake->tick_interval = tick_interval;
-    snake->cube_size    = cube_size;
-    snake->step_size    = 1.1f;
+    snake->cube_size = cube_size;
+    snake->step_size = 1.1f;
     snake->paused = false;
 
     // Começa no centro da face frontal
@@ -2271,7 +2274,6 @@ int text_renderer_init(const char* ttf_path, float font_size, int screen_w, int 
     fread(ttf_buf, 1, sz, f);
     fclose(f);
  
-    // --- bake do atlas ---
     unsigned char* bitmap = (unsigned char*)malloc(TEXT_ATLAS_W * TEXT_ATLAS_H);
     int result = stbtt_BakeFontBitmap(
         ttf_buf, 0,
@@ -2281,11 +2283,6 @@ int text_renderer_init(const char* ttf_path, float font_size, int screen_w, int 
         g_text.cdata
     );
     free(ttf_buf);
- 
-    if (result <= 0)
-    {
-        printf("[text] Aviso: atlas pode estar pequeno demais (result=%d). Aumente TEXT_ATLAS_W/H.\n", result);
-    }
  
     // textura do atlas (canal R)
     glGenTextures(1, &g_text.atlas_tex);
@@ -2333,7 +2330,7 @@ int text_renderer_init(const char* ttf_path, float font_size, int screen_w, int 
  
     text_set_projection(screen_w, screen_h);
  
-    printf("[text] Sistema de texto inicializado: %s @ %.0fpx\n", ttf_path, font_size);
+    printf("Sistema de texto inicializado: %s @ %.0fpx\n", ttf_path, font_size);
     return 1;
 }
  
@@ -2565,7 +2562,7 @@ int main()
     );
 
     // ------------------------------------------------------------------
-    // assets: cubo
+    // modelos
     // ------------------------------------------------------------------
 
     vertex3d_t cube_verts[] =

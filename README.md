@@ -1,4 +1,4 @@
-# 🐍 Snake 3D (em desenvolvimento)
+# 🐍 Cube Snake
 
 Feito para a segunda fase do processo seletivo do grupo de extensão Fellowship of the Gaming do ICMC-USP.
 
@@ -24,3 +24,20 @@ Feito para a segunda fase do processo seletivo do grupo de extensão Fellowship 
 | **GLFW** | Criação de janela, contexto OpenGL e captura de input |
 | **GLAD** | Loader das extensões OpenGL |
 | **stb_image** | Carregamento de texturas (`.jpg`, `.png`) |
+| **stb_truetype** | carregamento de fontes (`.ttf`) |
+| **miniaudio** | carregamento de sons/músicas (`.wav`) |
+
+## Build (em linux) a partir do código fonte:
+```bash
+mkdir build
+cd build
+cmake ..
+make
+```
+(Necessário ter o glfw instalado)
+
+## Assets utilizados:
+https://sketchfab.com/3d-models/apple-low-poly-76k-9mb-2k-626e626482fd431aa67b685b92fc5fbf
+https://opengameart.org/content/4-chiptunes-adventure
+https://opengameart.org/content/impact
+https://opengameart.org/content/menu-selection-click
