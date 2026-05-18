@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/luis/Dev/jogo_psel_fog/src/glad.c" "CMakeFiles/jogo_psel_fog.dir/src/glad.c.obj" "gcc" "CMakeFiles/jogo_psel_fog.dir/src/glad.c.obj.d"
   "/home/luis/Dev/jogo_psel_fog/src/main.c" "CMakeFiles/jogo_psel_fog.dir/src/main.c.obj" "gcc" "CMakeFiles/jogo_psel_fog.dir/src/main.c.obj.d"
+  "/home/luis/Dev/jogo_psel_fog/src/stb_vorbis_impl.c" "CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.obj" "gcc" "CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.obj.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

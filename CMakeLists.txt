@@ -10,6 +10,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 set(SOURCES
     src/main.c
     src/glad.c
+    src/stb_vorbis_impl.c
 )
 
 find_package(glfw3 CONFIG REQUIRED)
@@ -28,6 +29,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE STBI_NO_SIMD)
 target_link_libraries(${PROJECT_NAME}
     glfw
     ${OPENGL_LIBRARIES}
+    m
 )
 
 if(UNIX AND NOT APPLE)

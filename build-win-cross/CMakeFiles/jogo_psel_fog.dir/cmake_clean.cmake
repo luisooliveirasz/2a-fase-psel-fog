@@ -3,6 +3,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/jogo_psel_fog.dir/src/glad.c.obj.d"
   "CMakeFiles/jogo_psel_fog.dir/src/main.c.obj"
   "CMakeFiles/jogo_psel_fog.dir/src/main.c.obj.d"
+  "CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.obj"
+  "CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.obj.d"
   "jogo_psel_fog.exe"
   "jogo_psel_fog.pdb"
   "libjogo_psel_fog.dll.a"

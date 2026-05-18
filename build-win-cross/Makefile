@@ -177,6 +177,30 @@ src/main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/jogo_psel_fog.dir/build.make CMakeFiles/jogo_psel_fog.dir/src/main.c.s
 .PHONY : src/main.c.s
 
+src/stb_vorbis_impl.obj: src/stb_vorbis_impl.c.obj
+.PHONY : src/stb_vorbis_impl.obj
+
+# target to build an object file
+src/stb_vorbis_impl.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/jogo_psel_fog.dir/build.make CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.obj
+.PHONY : src/stb_vorbis_impl.c.obj
+
+src/stb_vorbis_impl.i: src/stb_vorbis_impl.c.i
+.PHONY : src/stb_vorbis_impl.i
+
+# target to preprocess a source file
+src/stb_vorbis_impl.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/jogo_psel_fog.dir/build.make CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.i
+.PHONY : src/stb_vorbis_impl.c.i
+
+src/stb_vorbis_impl.s: src/stb_vorbis_impl.c.s
+.PHONY : src/stb_vorbis_impl.s
+
+# target to generate assembly for a file
+src/stb_vorbis_impl.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/jogo_psel_fog.dir/build.make CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.s
+.PHONY : src/stb_vorbis_impl.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -192,6 +216,9 @@ help:
 	@echo "... src/main.obj"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/stb_vorbis_impl.obj"
+	@echo "... src/stb_vorbis_impl.i"
+	@echo "... src/stb_vorbis_impl.s"
 .PHONY : help
 
 

@@ -4,9 +4,6 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
-#define STB_VORBIS_IMPLEMENTATION
-#include "stb_vorbis.c"
-
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 
@@ -231,7 +228,7 @@ mat4 mat4_rotate_y(mat4* mat, float angle);
 mat4 mat4_rotate_z(mat4* mat, float angle);
 mat4 mat4_rotate(mat4* mat, vec3* axis, float angle);
 mat4 mat4_scale(mat4* mat, vec3* vec);
-mat4 mat4_perspective(float fov, float aspect, float near, float far);
+mat4 mat4_perspective(float fov, float aspect, float z_near, float z_far);
 mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up);
 
 // ------------------------------------------------------------------
@@ -1305,7 +1302,7 @@ mat4 mat4_scale(mat4* mat, vec3* vec)
     return mat4_multiply(mat, &s);
 }
 
-mat4 mat4_perspective(float fov, float aspect, float near, float far)
+mat4 mat4_perspective(float fov, float aspect, float z_near, float z_far)
 {
     mat4 result;
     memset(result.m, 0, sizeof(result.m));
@@ -1313,9 +1310,9 @@ mat4 mat4_perspective(float fov, float aspect, float near, float far)
     float f = 1.0f / tanf(fov * 0.5f);
     result.m[0]  = f / aspect;
     result.m[5]  = f;
-    result.m[10] = -(far + near) / (far - near);
+    result.m[10] = -(z_far + z_near) / (z_far - z_near);
     result.m[11] = -1.0f;
-    result.m[14] = -(2.0f * far * near) / (far - near);
+    result.m[14] = -(2.0f * z_far * z_near) / (z_far - z_near);
 
     return result;
 }
@@ -2469,7 +2466,7 @@ vec2 options_items_scale[3] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f }, (vec
 
 int pause_selected_item = 0;
 int pause_max_items = 4;
-const char PAUSE_OPTIONS[4][10] = { "Resume", "Toggle Music", "Toggle SFX", "Main Menu" };
+const char PAUSE_OPTIONS[4][20] = { "Resume", "Toggle Music", "Toggle SFX", "Main Menu" };
 vec2 pause_items_scale[4] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
 
 // ------------------------------------------------------------------
