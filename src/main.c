@@ -1867,9 +1867,9 @@ void snake_update(snake_t* snake, float current_time)
 
     vec3 new_forward = forward;
 
-    if (input_get_key_down(GLFW_KEY_A))
+    if (input_get_key_down(GLFW_KEY_A) || input_get_key_down(GLFW_KEY_LEFT))
         new_forward = vec3_rotate_around_axis(new_forward, normal,  PI/2.0f);
-    if (input_get_key_down(GLFW_KEY_D))
+    if (input_get_key_down(GLFW_KEY_D) || input_get_key_down(GLFW_KEY_RIGHT))
         new_forward = vec3_rotate_around_axis(new_forward, normal, -PI/2.0f);
     if (input_get_key_down(GLFW_KEY_W))
         new_forward = vec3_rotate_around_axis(new_forward, right,   PI/2.0f);
