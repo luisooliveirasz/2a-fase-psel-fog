@@ -1,8 +1,3 @@
-/*
-   HEADER FILE SECTION
-*/
-// ... código header ...
-
 #ifdef STB_VORBIS_IMPLEMENTATION
 
 // Ogg Vorbis audio decoder - v1.22 - public domain
