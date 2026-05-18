@@ -12,30 +12,24 @@ set(SOURCES
     src/glad.c
 )
 
-# Encontra GLFW usando o modo CONFIG (mais portável)
 find_package(glfw3 CONFIG REQUIRED)
 
-# Encontra OpenGL
 find_package(OpenGL REQUIRED)
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 if(MINGW)
     target_link_options(jogo_psel_fog PRIVATE -static -static-libgcc -static-libstdc++)
-    # Força GLFW estático também (se você tiver um alvo glfw)
     set(GLFW_BUILD_DLL OFF CACHE BOOL "" FORCE)
 endif()
 
-# Desativa SIMD no stb_image.h para Windows
 target_compile_definitions(${PROJECT_NAME} PRIVATE STBI_NO_SIMD)
 
-# Linka as bibliotecas
 target_link_libraries(${PROJECT_NAME}
     glfw
     ${OPENGL_LIBRARIES}
 )
 
-# No Linux, linka a biblioteca matemática (no Windows já está na libc)
 if(UNIX AND NOT APPLE)
     target_link_libraries(${PROJECT_NAME} m)
 endif()
