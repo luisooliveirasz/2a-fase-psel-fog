@@ -299,7 +299,6 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /home/luis/Dev/jogo_psel_fog/include/miniaudio.h \
   /home/luis/Dev/jogo_psel_fog/include/stb_image.h \
   /home/luis/Dev/jogo_psel_fog/include/stb_truetype.h \
-  /home/luis/Dev/jogo_psel_fog/src/stb_vorbis.c \
   /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/adxintrin.h \
   /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/ammintrin.h \
   /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/amxavx512intrin.h \
@@ -421,6 +420,7 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/xsaveoptintrin.h \
   /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/xsavesintrin.h \
   /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/xtestintrin.h \
+  /usr/x86_64-w64-mingw32/include/_bsd_types.h \
   /usr/x86_64-w64-mingw32/include/_mingw.h \
   /usr/x86_64-w64-mingw32/include/_mingw_mac.h \
   /usr/x86_64-w64-mingw32/include/_mingw_off_t.h \
@@ -433,7 +433,12 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /usr/x86_64-w64-mingw32/include/apisetcconv.h \
   /usr/x86_64-w64-mingw32/include/assert.h \
   /usr/x86_64-w64-mingw32/include/basetsd.h \
+  /usr/x86_64-w64-mingw32/include/bcrypt.h \
   /usr/x86_64-w64-mingw32/include/bemapiset.h \
+  /usr/x86_64-w64-mingw32/include/cderr.h \
+  /usr/x86_64-w64-mingw32/include/cguid.h \
+  /usr/x86_64-w64-mingw32/include/combaseapi.h \
+  /usr/x86_64-w64-mingw32/include/commdlg.h \
   /usr/x86_64-w64-mingw32/include/concurrencysal.h \
   /usr/x86_64-w64-mingw32/include/consoleapi.h \
   /usr/x86_64-w64-mingw32/include/consoleapi2.h \
@@ -446,7 +451,11 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /usr/x86_64-w64-mingw32/include/crtdefs.h \
   /usr/x86_64-w64-mingw32/include/ctype.h \
   /usr/x86_64-w64-mingw32/include/datetimeapi.h \
+  /usr/x86_64-w64-mingw32/include/dde.h \
+  /usr/x86_64-w64-mingw32/include/ddeml.h \
   /usr/x86_64-w64-mingw32/include/debugapi.h \
+  /usr/x86_64-w64-mingw32/include/dlgs.h \
+  /usr/x86_64-w64-mingw32/include/dpapi.h \
   /usr/x86_64-w64-mingw32/include/driverspecs.h \
   /usr/x86_64-w64-mingw32/include/errhandlingapi.h \
   /usr/x86_64-w64-mingw32/include/errno.h \
@@ -458,26 +467,55 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /usr/x86_64-w64-mingw32/include/handleapi.h \
   /usr/x86_64-w64-mingw32/include/heapapi.h \
   /usr/x86_64-w64-mingw32/include/imm.h \
+  /usr/x86_64-w64-mingw32/include/inaddr.h \
   /usr/x86_64-w64-mingw32/include/interlockedapi.h \
   /usr/x86_64-w64-mingw32/include/io.h \
   /usr/x86_64-w64-mingw32/include/ioapiset.h \
   /usr/x86_64-w64-mingw32/include/jobapi.h \
+  /usr/x86_64-w64-mingw32/include/joystickapi.h \
   /usr/x86_64-w64-mingw32/include/ktmtypes.h \
   /usr/x86_64-w64-mingw32/include/libloaderapi.h \
   /usr/x86_64-w64-mingw32/include/limits.h \
+  /usr/x86_64-w64-mingw32/include/lzexpand.h \
   /usr/x86_64-w64-mingw32/include/malloc.h \
   /usr/x86_64-w64-mingw32/include/math.h \
+  /usr/x86_64-w64-mingw32/include/mciapi.h \
   /usr/x86_64-w64-mingw32/include/mcx.h \
   /usr/x86_64-w64-mingw32/include/memoryapi.h \
   /usr/x86_64-w64-mingw32/include/minwinbase.h \
   /usr/x86_64-w64-mingw32/include/minwindef.h \
+  /usr/x86_64-w64-mingw32/include/mmeapi.h \
+  /usr/x86_64-w64-mingw32/include/mmiscapi.h \
+  /usr/x86_64-w64-mingw32/include/mmiscapi2.h \
+  /usr/x86_64-w64-mingw32/include/mmsyscom.h \
+  /usr/x86_64-w64-mingw32/include/mmsystem.h \
+  /usr/x86_64-w64-mingw32/include/msxml.h \
   /usr/x86_64-w64-mingw32/include/namedpipeapi.h \
   /usr/x86_64-w64-mingw32/include/namespaceapi.h \
+  /usr/x86_64-w64-mingw32/include/nb30.h \
+  /usr/x86_64-w64-mingw32/include/ncrypt.h \
+  /usr/x86_64-w64-mingw32/include/oaidl.h \
+  /usr/x86_64-w64-mingw32/include/objbase.h \
+  /usr/x86_64-w64-mingw32/include/objidl.h \
+  /usr/x86_64-w64-mingw32/include/objidlbase.h \
+  /usr/x86_64-w64-mingw32/include/ole2.h \
+  /usr/x86_64-w64-mingw32/include/oleauto.h \
+  /usr/x86_64-w64-mingw32/include/oleidl.h \
+  /usr/x86_64-w64-mingw32/include/playsoundapi.h \
   /usr/x86_64-w64-mingw32/include/poppack.h \
   /usr/x86_64-w64-mingw32/include/processenv.h \
   /usr/x86_64-w64-mingw32/include/processthreadsapi.h \
   /usr/x86_64-w64-mingw32/include/processtopologyapi.h \
   /usr/x86_64-w64-mingw32/include/profileapi.h \
+  /usr/x86_64-w64-mingw32/include/propidl.h \
+  /usr/x86_64-w64-mingw32/include/prsht.h \
+  /usr/x86_64-w64-mingw32/include/psdk_inc/_fd_types.h \
+  /usr/x86_64-w64-mingw32/include/psdk_inc/_ip_mreq1.h \
+  /usr/x86_64-w64-mingw32/include/psdk_inc/_ip_types.h \
+  /usr/x86_64-w64-mingw32/include/psdk_inc/_socket_types.h \
+  /usr/x86_64-w64-mingw32/include/psdk_inc/_wsa_errnos.h \
+  /usr/x86_64-w64-mingw32/include/psdk_inc/_wsadata.h \
+  /usr/x86_64-w64-mingw32/include/psdk_inc/_xmitfile.h \
   /usr/x86_64-w64-mingw32/include/psdk_inc/intrin-impl.h \
   /usr/x86_64-w64-mingw32/include/pshpack1.h \
   /usr/x86_64-w64-mingw32/include/pshpack2.h \
@@ -487,6 +525,15 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /usr/x86_64-w64-mingw32/include/pthread_time.h \
   /usr/x86_64-w64-mingw32/include/realtimeapiset.h \
   /usr/x86_64-w64-mingw32/include/reason.h \
+  /usr/x86_64-w64-mingw32/include/rpc.h \
+  /usr/x86_64-w64-mingw32/include/rpcasync.h \
+  /usr/x86_64-w64-mingw32/include/rpcdce.h \
+  /usr/x86_64-w64-mingw32/include/rpcdcep.h \
+  /usr/x86_64-w64-mingw32/include/rpcndr.h \
+  /usr/x86_64-w64-mingw32/include/rpcnsi.h \
+  /usr/x86_64-w64-mingw32/include/rpcnsip.h \
+  /usr/x86_64-w64-mingw32/include/rpcnterr.h \
+  /usr/x86_64-w64-mingw32/include/rpcsal.h \
   /usr/x86_64-w64-mingw32/include/sal.h \
   /usr/x86_64-w64-mingw32/include/sdkddkver.h \
   /usr/x86_64-w64-mingw32/include/sec_api/stdio_s.h \
@@ -498,6 +545,8 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /usr/x86_64-w64-mingw32/include/sec_api/wconio_s.h \
   /usr/x86_64-w64-mingw32/include/securityappcontainer.h \
   /usr/x86_64-w64-mingw32/include/securitybaseapi.h \
+  /usr/x86_64-w64-mingw32/include/servprov.h \
+  /usr/x86_64-w64-mingw32/include/shellapi.h \
   /usr/x86_64-w64-mingw32/include/specstrings.h \
   /usr/x86_64-w64-mingw32/include/stdarg.h \
   /usr/x86_64-w64-mingw32/include/stddef.h \
@@ -518,8 +567,12 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /usr/x86_64-w64-mingw32/include/threadpoolapiset.h \
   /usr/x86_64-w64-mingw32/include/threadpoollegacyapiset.h \
   /usr/x86_64-w64-mingw32/include/time.h \
+  /usr/x86_64-w64-mingw32/include/timeapi.h \
   /usr/x86_64-w64-mingw32/include/timezoneapi.h \
   /usr/x86_64-w64-mingw32/include/tvout.h \
+  /usr/x86_64-w64-mingw32/include/unknwn.h \
+  /usr/x86_64-w64-mingw32/include/unknwnbase.h \
+  /usr/x86_64-w64-mingw32/include/urlmon.h \
   /usr/x86_64-w64-mingw32/include/utilapiset.h \
   /usr/x86_64-w64-mingw32/include/vadefs.h \
   /usr/x86_64-w64-mingw32/include/virtdisk.h \
@@ -528,20 +581,54 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
   /usr/x86_64-w64-mingw32/include/winbase.h \
   /usr/x86_64-w64-mingw32/include/wincon.h \
   /usr/x86_64-w64-mingw32/include/wincontypes.h \
+  /usr/x86_64-w64-mingw32/include/wincrypt.h \
   /usr/x86_64-w64-mingw32/include/windef.h \
   /usr/x86_64-w64-mingw32/include/windows.h \
+  /usr/x86_64-w64-mingw32/include/winefs.h \
   /usr/x86_64-w64-mingw32/include/winerror.h \
   /usr/x86_64-w64-mingw32/include/wingdi.h \
+  /usr/x86_64-w64-mingw32/include/winioctl.h \
   /usr/x86_64-w64-mingw32/include/winnetwk.h \
   /usr/x86_64-w64-mingw32/include/winnls.h \
   /usr/x86_64-w64-mingw32/include/winnt.h \
+  /usr/x86_64-w64-mingw32/include/winperf.h \
   /usr/x86_64-w64-mingw32/include/winreg.h \
+  /usr/x86_64-w64-mingw32/include/winscard.h \
+  /usr/x86_64-w64-mingw32/include/winsmcrd.h \
+  /usr/x86_64-w64-mingw32/include/winsock.h \
+  /usr/x86_64-w64-mingw32/include/winspool.h \
   /usr/x86_64-w64-mingw32/include/winsvc.h \
   /usr/x86_64-w64-mingw32/include/winuser.h \
   /usr/x86_64-w64-mingw32/include/winver.h \
   /usr/x86_64-w64-mingw32/include/wnnc.h \
-  /usr/x86_64-w64-mingw32/include/wow64apiset.h
+  /usr/x86_64-w64-mingw32/include/wow64apiset.h \
+  /usr/x86_64-w64-mingw32/include/wtypes.h \
+  /usr/x86_64-w64-mingw32/include/wtypesbase.h
 
+CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.obj: /home/luis/Dev/jogo_psel_fog/src/stb_vorbis_impl.c \
+  /home/luis/Dev/jogo_psel_fog/include/stb_vorbis.h \
+  /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/limits.h \
+  /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/mm_malloc.h \
+  /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/syslimits.h \
+  /usr/x86_64-w64-mingw32/include/_mingw.h \
+  /usr/x86_64-w64-mingw32/include/_mingw_mac.h \
+  /usr/x86_64-w64-mingw32/include/_mingw_secapi.h \
+  /usr/x86_64-w64-mingw32/include/assert.h \
+  /usr/x86_64-w64-mingw32/include/corecrt.h \
+  /usr/x86_64-w64-mingw32/include/corecrt_wstdlib.h \
+  /usr/x86_64-w64-mingw32/include/crtdefs.h \
+  /usr/x86_64-w64-mingw32/include/errno.h \
+  /usr/x86_64-w64-mingw32/include/limits.h \
+  /usr/x86_64-w64-mingw32/include/malloc.h \
+  /usr/x86_64-w64-mingw32/include/math.h \
+  /usr/x86_64-w64-mingw32/include/sec_api/stdlib_s.h \
+  /usr/x86_64-w64-mingw32/include/sec_api/string_s.h \
+  /usr/x86_64-w64-mingw32/include/stdlib.h \
+  /usr/x86_64-w64-mingw32/include/string.h \
+  /usr/x86_64-w64-mingw32/include/vadefs.h
+
+
+/home/luis/Dev/jogo_psel_fog/include/stb_vorbis.h:
 
 /usr/x86_64-w64-mingw32/include/wchar.h:
 
@@ -560,8 +647,6 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
 /usr/x86_64-w64-mingw32/include/assert.h:
 
 /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/stdbool.h:
-
-/home/luis/Dev/jogo_psel_fog/src/stb_vorbis.c:
 
 /home/luis/Dev/jogo_psel_fog/include/stb_image.h:
 
@@ -858,6 +943,8 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.obj: /home/luis/Dev/jogo_psel_fog/src/ma
 /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/xsavesintrin.h:
 
 /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/avx512vbmivlintrin.h:
+
+/home/luis/Dev/jogo_psel_fog/src/stb_vorbis_impl.c:
 
 /usr/lib/gcc/x86_64-w64-mingw32/16.1.0/include/avx10_2convertintrin.h:
 
