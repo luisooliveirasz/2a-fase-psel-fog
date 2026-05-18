@@ -4,9 +4,15 @@ jogo_psel_fog: \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o \
   CMakeFiles/jogo_psel_fog.dir/src/main.c.o \
   CMakeFiles/jogo_psel_fog.dir/src/glad.c.o \
+  CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.o \
   /usr/lib/libglfw.so.3.4 \
   /usr/lib/libGL.so \
   /usr/lib/libGLU.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so \
+  /usr/lib/libm.so.6 \
+  /usr/lib/libmvec.so.1 \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so \
@@ -63,11 +69,23 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
 
 CMakeFiles/jogo_psel_fog.dir/src/glad.c.o:
 
+CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.o:
+
 /usr/lib/libglfw.so.3.4:
 
 /usr/lib/libGL.so:
 
 /usr/lib/libGLU.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so:
+
+/usr/lib/libm.so.6:
+
+/usr/lib/libmvec.so.1:
 
 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/../../../../lib/libm.so:
 

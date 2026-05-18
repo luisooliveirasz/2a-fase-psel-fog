@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/home/luis/Dev/jogo_psel_fog/src/glad.c" "CMakeFiles/jogo_psel_fog.dir/src/glad.c.o" "gcc" "CMakeFiles/jogo_psel_fog.dir/src/glad.c.o.d"
   "/home/luis/Dev/jogo_psel_fog/src/main.c" "CMakeFiles/jogo_psel_fog.dir/src/main.c.o" "gcc" "CMakeFiles/jogo_psel_fog.dir/src/main.c.o.d"
+  "/home/luis/Dev/jogo_psel_fog/src/stb_vorbis_impl.c" "CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.o" "gcc" "CMakeFiles/jogo_psel_fog.dir/src/stb_vorbis_impl.c.o.d"
   "" "jogo_psel_fog" "gcc" "CMakeFiles/jogo_psel_fog.dir/link.d"
   )
 

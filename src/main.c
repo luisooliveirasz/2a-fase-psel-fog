@@ -2546,7 +2546,7 @@ int main()
 
     ma_result result = ma_engine_init(NULL, &audio_engine);
 
-    result = ma_sound_init_from_file(&audio_engine, "assets/bgm.ogg",
+    result = ma_sound_init_from_file(&audio_engine, "assets/bgm.wav",
         MA_SOUND_FLAG_STREAM, NULL, NULL, &bgm_music);
     
     ma_sound_set_looping(&bgm_music, MA_TRUE);
@@ -3021,7 +3021,7 @@ int main()
                             game_world_remove(&world, apple_id);
                             snake_grow(&snake);
                             if (f_sfx)
-                                ma_engine_play_sound(&audio_engine, "assets/apple_collect.ogg", NULL);
+                                ma_engine_play_sound(&audio_engine, "assets/apple_collect.wav", NULL);
                             apple_id = apple_create(&world, &apple_model.mesh, &apple_model.texture, &snake);
                             apple = game_world_get_object(&world, apple_id);
                         }

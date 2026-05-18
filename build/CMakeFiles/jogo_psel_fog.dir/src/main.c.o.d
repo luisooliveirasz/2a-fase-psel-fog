@@ -50,7 +50,6 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o: \
  /usr/include/stdint.h /usr/include/bits/wchar.h \
  /usr/include/bits/stdint-uintn.h /usr/include/bits/stdint-least.h \
  /home/luis/Dev/jogo_psel_fog/include/stb_truetype.h \
- /home/luis/Dev/jogo_psel_fog/src/stb_vorbis.c \
  /home/luis/Dev/jogo_psel_fog/include/miniaudio.h /usr/include/pthread.h \
  /usr/include/sched.h /usr/include/bits/sched.h \
  /usr/include/bits/types/struct_sched_param.h /usr/include/bits/cpu-set.h \
