@@ -50,10 +50,33 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o: \
  /usr/include/stdint.h /usr/include/bits/wchar.h \
  /usr/include/bits/stdint-uintn.h /usr/include/bits/stdint-least.h \
  /home/luis/Dev/jogo_psel_fog/include/stb_truetype.h \
- /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdbool.h \
+ /home/luis/Dev/jogo_psel_fog/src/stb_vorbis.c \
+ /home/luis/Dev/jogo_psel_fog/include/miniaudio.h /usr/include/pthread.h \
+ /usr/include/sched.h /usr/include/bits/sched.h \
+ /usr/include/bits/types/struct_sched_param.h /usr/include/bits/cpu-set.h \
  /usr/include/time.h /usr/include/bits/time.h \
  /usr/include/bits/types/struct_tm.h \
- /usr/include/bits/types/struct_itimerspec.h \
+ /usr/include/bits/types/struct_itimerspec.h /usr/include/bits/setjmp.h \
+ /usr/include/bits/types/struct___jmp_buf_tag.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdalign.h \
+ /usr/include/wchar.h /usr/include/bits/types/wint_t.h \
+ /usr/include/bits/types/mbstate_t.h /usr/include/sys/time.h \
+ /usr/include/unistd.h /usr/include/bits/posix_opt.h \
+ /usr/include/bits/environments.h /usr/include/bits/confname.h \
+ /usr/include/bits/getopt_posix.h /usr/include/bits/getopt_core.h \
+ /usr/include/bits/unistd_ext.h /usr/include/sys/stat.h \
+ /usr/include/bits/stat.h /usr/include/bits/struct_stat.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/emmintrin.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/xmmintrin.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/mmintrin.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/mm_malloc.h \
+ /usr/include/errno.h /usr/include/bits/errno.h \
+ /usr/include/linux/errno.h /usr/include/asm/errno.h \
+ /usr/include/asm-generic/errno.h /usr/include/asm-generic/errno-base.h \
+ /usr/include/dlfcn.h /usr/include/bits/dlfcn.h /usr/include/poll.h \
+ /usr/include/sys/poll.h /usr/include/bits/poll.h \
+ /usr/include/sys/eventfd.h /usr/include/bits/eventfd.h \
+ /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdbool.h \
  /home/luis/Dev/jogo_psel_fog/include/glad/glad.h \
  /home/luis/Dev/jogo_psel_fog/include/KHR/khrplatform.h \
  /home/luis/Dev/jogo_psel_fog/include/GLFW/glfw3.h

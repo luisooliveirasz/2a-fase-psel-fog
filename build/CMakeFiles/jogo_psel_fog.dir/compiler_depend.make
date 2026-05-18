@@ -74,19 +74,32 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o: /home/luis/Dev/jogo_psel_fog/src/main
   /home/luis/Dev/jogo_psel_fog/include/GLFW/glfw3.h \
   /home/luis/Dev/jogo_psel_fog/include/KHR/khrplatform.h \
   /home/luis/Dev/jogo_psel_fog/include/glad/glad.h \
+  /home/luis/Dev/jogo_psel_fog/include/miniaudio.h \
   /home/luis/Dev/jogo_psel_fog/include/stb_image.h \
   /home/luis/Dev/jogo_psel_fog/include/stb_truetype.h \
+  /home/luis/Dev/jogo_psel_fog/src/stb_vorbis.c \
   /usr/include/alloca.h \
+  /usr/include/asm-generic/errno-base.h \
+  /usr/include/asm-generic/errno.h \
+  /usr/include/asm/errno.h \
   /usr/include/assert.h \
   /usr/include/bits/atomic_wide_counter.h \
   /usr/include/bits/byteswap.h \
+  /usr/include/bits/confname.h \
+  /usr/include/bits/cpu-set.h \
+  /usr/include/bits/dlfcn.h \
   /usr/include/bits/endian.h \
   /usr/include/bits/endianness.h \
+  /usr/include/bits/environments.h \
+  /usr/include/bits/errno.h \
+  /usr/include/bits/eventfd.h \
   /usr/include/bits/floatn-common.h \
   /usr/include/bits/floatn.h \
   /usr/include/bits/flt-eval-method.h \
   /usr/include/bits/fp-fast.h \
   /usr/include/bits/fp-logb.h \
+  /usr/include/bits/getopt_core.h \
+  /usr/include/bits/getopt_posix.h \
   /usr/include/bits/libc-header-start.h \
   /usr/include/bits/libm-simd-decl-stubs.h \
   /usr/include/bits/local_lim.h \
@@ -95,13 +108,18 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o: /home/luis/Dev/jogo_psel_fog/src/main
   /usr/include/bits/mathcalls-helper-functions.h \
   /usr/include/bits/mathcalls-macros.h \
   /usr/include/bits/mathcalls.h \
+  /usr/include/bits/poll.h \
   /usr/include/bits/posix1_lim.h \
   /usr/include/bits/posix2_lim.h \
+  /usr/include/bits/posix_opt.h \
   /usr/include/bits/pthread_stack_min-dynamic.h \
   /usr/include/bits/pthread_stack_min.h \
   /usr/include/bits/pthreadtypes-arch.h \
   /usr/include/bits/pthreadtypes.h \
+  /usr/include/bits/sched.h \
   /usr/include/bits/select.h \
+  /usr/include/bits/setjmp.h \
+  /usr/include/bits/stat.h \
   /usr/include/bits/stdint-intn.h \
   /usr/include/bits/stdint-least.h \
   /usr/include/bits/stdint-uintn.h \
@@ -109,6 +127,7 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o: /home/luis/Dev/jogo_psel_fog/src/main
   /usr/include/bits/stdlib-float.h \
   /usr/include/bits/struct_mutex.h \
   /usr/include/bits/struct_rwlock.h \
+  /usr/include/bits/struct_stat.h \
   /usr/include/bits/thread-shared-types.h \
   /usr/include/bits/time.h \
   /usr/include/bits/time64.h \
@@ -125,28 +144,39 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o: /home/luis/Dev/jogo_psel_fog/src/main
   /usr/include/bits/types/clockid_t.h \
   /usr/include/bits/types/cookie_io_functions_t.h \
   /usr/include/bits/types/locale_t.h \
+  /usr/include/bits/types/mbstate_t.h \
   /usr/include/bits/types/sigset_t.h \
   /usr/include/bits/types/struct_FILE.h \
+  /usr/include/bits/types/struct___jmp_buf_tag.h \
   /usr/include/bits/types/struct_itimerspec.h \
+  /usr/include/bits/types/struct_sched_param.h \
   /usr/include/bits/types/struct_timespec.h \
   /usr/include/bits/types/struct_timeval.h \
   /usr/include/bits/types/struct_tm.h \
   /usr/include/bits/types/time_t.h \
   /usr/include/bits/types/timer_t.h \
+  /usr/include/bits/types/wint_t.h \
   /usr/include/bits/typesizes.h \
   /usr/include/bits/uintn-identity.h \
+  /usr/include/bits/unistd_ext.h \
   /usr/include/bits/waitflags.h \
   /usr/include/bits/waitstatus.h \
   /usr/include/bits/wchar.h \
   /usr/include/bits/wordsize.h \
+  /usr/include/dlfcn.h \
   /usr/include/endian.h \
+  /usr/include/errno.h \
   /usr/include/features-time64.h \
   /usr/include/features.h \
   /usr/include/gnu/stubs-64.h \
   /usr/include/gnu/stubs.h \
   /usr/include/limits.h \
+  /usr/include/linux/errno.h \
   /usr/include/linux/limits.h \
   /usr/include/math.h \
+  /usr/include/poll.h \
+  /usr/include/pthread.h \
+  /usr/include/sched.h \
   /usr/include/stdc-predef.h \
   /usr/include/stdint.h \
   /usr/include/stdio.h \
@@ -154,15 +184,26 @@ CMakeFiles/jogo_psel_fog.dir/src/main.c.o: /home/luis/Dev/jogo_psel_fog/src/main
   /usr/include/string.h \
   /usr/include/strings.h \
   /usr/include/sys/cdefs.h \
+  /usr/include/sys/eventfd.h \
+  /usr/include/sys/poll.h \
   /usr/include/sys/select.h \
+  /usr/include/sys/stat.h \
+  /usr/include/sys/time.h \
   /usr/include/sys/types.h \
   /usr/include/time.h \
+  /usr/include/unistd.h \
+  /usr/include/wchar.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/emmintrin.h \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/limits.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/mm_malloc.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/mmintrin.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdalign.h \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdarg.h \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdbool.h \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stddef.h \
   /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdint.h \
-  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/syslimits.h
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/syslimits.h \
+  /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/xmmintrin.h
 
 jogo_psel_fog: /usr/lib/Scrt1.o \
   /usr/lib/crti.o \
@@ -197,256 +238,334 @@ jogo_psel_fog: /usr/lib/Scrt1.o \
   CMakeFiles/jogo_psel_fog.dir/src/main.c.o
 
 
-/usr/lib/libxcb.so.1:
+CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
 
-/usr/lib/libstdc++.so.6:
+CMakeFiles/jogo_psel_fog.dir/src/glad.c.o:
 
 /usr/lib/libmvec.so.1:
+
+/usr/lib/libm.so.6:
+
+/usr/lib/libc_nonshared.a:
 
 /usr/lib/libc.so.6:
 
 /usr/lib/libXdmcp.so.6:
 
+/usr/lib/libOpenGL.so.0:
+
 /usr/lib/libGLdispatch.so.0:
 
-/usr/lib/libGLU.so:
+/usr/lib/libGLX.so.0:
 
-/usr/lib/libglfw.so.3.4:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o:
 
-/usr/lib/ld-linux-x86-64.so.2:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/libgcc.a:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o:
 
 /usr/lib/libm.so:
 
 /usr/lib/libgcc_s_asneeded.so:
 
-/usr/lib/libGLX.so.0:
-
-/usr/lib/libgcc_s.so.1:
+/usr/lib/libxcb.so.1:
 
 /usr/lib/libgcc_s.so:
 
-/usr/lib/libatomic_asneeded.so:
+/usr/lib/libc.so:
 
-/usr/lib/libatomic.so:
+/usr/lib/libatomic_asneeded.so:
 
 /usr/lib/crtn.o:
 
-CMakeFiles/jogo_psel_fog.dir/src/glad.c.o:
-
-/usr/lib/crti.o:
-
-/usr/include/time.h:
-
-/usr/include/bits/time.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtbeginS.o:
-
-/usr/include/bits/pthread_stack_min.h:
-
-/usr/lib/Scrt1.o:
-
-/usr/include/bits/pthread_stack_min-dynamic.h:
-
-/usr/include/bits/posix2_lim.h:
-
-/usr/include/bits/mathcalls.h:
-
-/usr/include/bits/mathcalls-macros.h:
-
-/usr/include/bits/libm-simd-decl-stubs.h:
-
-/usr/lib/libc.so:
-
-/usr/include/bits/posix1_lim.h:
-
-/usr/include/bits/fp-fast.h:
-
-/usr/include/bits/flt-eval-method.h:
-
-/usr/include/assert.h:
-
-/home/luis/Dev/jogo_psel_fog/include/stb_truetype.h:
-
-/home/luis/Dev/jogo_psel_fog/include/GLFW/glfw3.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/limits.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdint.h:
-
-/usr/lib/libX11.so.6:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stddef.h:
-
-/home/luis/Dev/jogo_psel_fog/src/main.c:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdarg.h:
-
-/usr/include/bits/types/struct_itimerspec.h:
-
-/usr/include/sys/types.h:
-
-/usr/lib/libm.so.6:
-
-/usr/include/sys/select.h:
-
-/usr/include/sys/cdefs.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/crtendS.o:
-
-/usr/include/strings.h:
-
-/usr/include/stdlib.h:
-
-/usr/include/limits.h:
-
-/usr/include/bits/types/FILE.h:
-
-/usr/lib/libc_nonshared.a:
-
-/usr/include/bits/types.h:
-
-/home/luis/Dev/jogo_psel_fog/include/glad/glad.h:
-
-/usr/lib/libGL.so:
-
-/usr/include/string.h:
-
-/usr/include/bits/time64.h:
-
-/usr/include/bits/byteswap.h:
-
-/usr/include/bits/fp-logb.h:
-
-/home/luis/Dev/jogo_psel_fog/include/KHR/khrplatform.h:
-
-/usr/include/bits/types/struct_tm.h:
-
-/usr/include/bits/wchar.h:
-
-/usr/include/bits/stdint-least.h:
-
-/usr/include/alloca.h:
-
-/usr/include/bits/stdint-intn.h:
-
-/usr/include/bits/struct_mutex.h:
-
-/usr/include/gnu/stubs-64.h:
-
-/usr/include/bits/select.h:
-
-/usr/lib/libOpenGL.so.0:
-
-/usr/include/bits/types/__fpos64_t.h:
-
-/usr/include/features-time64.h:
-
-CMakeFiles/jogo_psel_fog.dir/src/main.c.o:
-
-/usr/include/stdc-predef.h:
-
-/usr/include/bits/pthreadtypes-arch.h:
-
-/usr/include/bits/endianness.h:
-
-/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/syslimits.h:
-
-/usr/include/bits/types/__FILE.h:
-
-/usr/include/bits/stdlib-float.h:
-
-/usr/include/bits/types/sigset_t.h:
-
-/usr/include/bits/floatn-common.h:
-
-/usr/include/bits/long-double.h:
-
-/usr/include/bits/libc-header-start.h:
-
-/usr/include/bits/timesize.h:
-
-/usr/include/bits/endian.h:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/xmmintrin.h:
 
 /usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdbool.h:
 
-/usr/include/bits/types/__sigset_t.h:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdalign.h:
 
-/usr/include/bits/waitflags.h:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/mm_malloc.h:
 
-/usr/include/bits/thread-shared-types.h:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/mmintrin.h:
 
-/home/luis/Dev/jogo_psel_fog/src/glad.c:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/limits.h:
 
-/usr/include/bits/dlfcn.h:
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/emmintrin.h:
 
-/usr/include/bits/pthreadtypes.h:
+/usr/include/stdio.h:
 
-/usr/include/bits/floatn.h:
-
-/usr/include/bits/math-vector.h:
-
-/usr/include/bits/types/__fpos_t.h:
-
-/usr/include/bits/wordsize.h:
-
-/usr/include/bits/types/__locale_t.h:
-
-/usr/include/bits/local_lim.h:
-
-/usr/include/bits/types/__mbstate_t.h:
-
-/usr/include/linux/limits.h:
-
-/usr/include/bits/types/clock_t.h:
-
-/usr/include/bits/atomic_wide_counter.h:
-
-/usr/include/bits/types/clockid_t.h:
-
-/usr/include/bits/uintn-identity.h:
-
-/usr/include/bits/typesizes.h:
-
-/usr/include/bits/types/locale_t.h:
-
-/usr/include/bits/types/struct_FILE.h:
-
-/home/luis/Dev/jogo_psel_fog/include/stb_image.h:
-
-/usr/include/bits/types/struct_timespec.h:
-
-/usr/include/bits/stdio_lim.h:
-
-/usr/include/bits/types/struct_timeval.h:
-
-/usr/include/bits/mathcalls-helper-functions.h:
-
-/usr/include/bits/struct_rwlock.h:
-
-/usr/include/bits/types/time_t.h:
-
-/usr/include/bits/stdint-uintn.h:
-
-/usr/include/bits/types/cookie_io_functions_t.h:
-
-/usr/include/endian.h:
-
-/usr/include/bits/waitstatus.h:
-
-/usr/lib/libXau.so.6:
-
-/usr/include/dlfcn.h:
-
-/usr/include/features.h:
-
-/usr/include/math.h:
-
-/usr/include/gnu/stubs.h:
-
-/usr/include/stdint.h:
+/usr/lib/Scrt1.o:
 
 /usr/include/bits/types/timer_t.h:
 
-/usr/include/stdio.h:
+/usr/include/math.h:
+
+/home/luis/Dev/jogo_psel_fog/src/stb_vorbis.c:
+
+/usr/include/dlfcn.h:
+
+/usr/include/bits/types/wint_t.h:
+
+/usr/include/bits/types/cookie_io_functions_t.h:
+
+/usr/include/bits/stdint-uintn.h:
+
+/usr/include/bits/sched.h:
+
+/usr/include/bits/types/struct_timeval.h:
+
+/usr/include/bits/types/struct_timespec.h:
+
+/home/luis/Dev/jogo_psel_fog/include/stb_image.h:
+
+/usr/include/bits/types/struct_FILE.h:
+
+/usr/include/sys/stat.h:
+
+/usr/include/bits/types/locale_t.h:
+
+/usr/lib/crti.o:
+
+/usr/include/bits/typesizes.h:
+
+/usr/lib/libXau.so.6:
+
+/usr/include/bits/uintn-identity.h:
+
+/usr/include/bits/cpu-set.h:
+
+/usr/include/bits/types/clockid_t.h:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/libgcc.a:
+
+/usr/include/errno.h:
+
+/usr/include/stdint.h:
+
+/usr/include/linux/limits.h:
+
+/usr/include/bits/local_lim.h:
+
+/usr/include/bits/types/__locale_t.h:
+
+/usr/include/sched.h:
+
+/usr/include/bits/wordsize.h:
+
+/usr/include/bits/math-vector.h:
+
+/usr/include/bits/floatn.h:
+
+/usr/include/bits/pthreadtypes.h:
+
+/usr/include/bits/dlfcn.h:
+
+/usr/lib/libglfw.so.3.4:
+
+/home/luis/Dev/jogo_psel_fog/src/glad.c:
+
+/usr/include/bits/thread-shared-types.h:
+
+/usr/include/bits/waitflags.h:
+
+/usr/include/bits/types/__sigset_t.h:
+
+/usr/include/bits/endian.h:
+
+/usr/include/bits/waitstatus.h:
+
+/usr/include/bits/timesize.h:
+
+/usr/include/asm/errno.h:
+
+/usr/include/bits/libc-header-start.h:
+
+/usr/include/bits/types/struct_sched_param.h:
+
+/usr/include/sys/eventfd.h:
+
+/usr/include/bits/floatn-common.h:
+
+/usr/include/sys/poll.h:
+
+/usr/include/bits/types/sigset_t.h:
+
+/usr/include/bits/types/__FILE.h:
+
+/usr/lib/libatomic.so:
+
+/usr/include/features.h:
+
+/usr/include/bits/endianness.h:
+
+/home/luis/Dev/jogo_psel_fog/include/miniaudio.h:
+
+/usr/include/gnu/stubs.h:
+
+/usr/include/bits/pthreadtypes-arch.h:
+
+/usr/include/stdc-predef.h:
+
+/usr/lib/libX11.so.6:
+
+/usr/include/bits/types/__fpos64_t.h:
+
+/usr/include/bits/select.h:
+
+/usr/include/gnu/stubs-64.h:
+
+/usr/include/bits/struct_mutex.h:
+
+/usr/include/bits/stdint-intn.h:
+
+/usr/include/alloca.h:
+
+/usr/lib/libGL.so:
+
+/usr/include/bits/stdint-least.h:
+
+/usr/include/bits/wchar.h:
+
+/usr/include/bits/types/struct_tm.h:
+
+/home/luis/Dev/jogo_psel_fog/include/KHR/khrplatform.h:
+
+/usr/include/bits/byteswap.h:
+
+/usr/include/bits/stdlib-float.h:
+
+/usr/include/bits/time64.h:
+
+/usr/include/bits/mathcalls-helper-functions.h:
+
+/usr/include/string.h:
+
+/usr/include/bits/types.h:
+
+/usr/include/bits/getopt_core.h:
+
+/usr/include/limits.h:
+
+/usr/include/stdlib.h:
+
+/usr/include/strings.h:
+
+/usr/include/sys/cdefs.h:
+
+/usr/include/features-time64.h:
+
+/usr/include/poll.h:
+
+/usr/include/sys/select.h:
+
+/usr/include/bits/environments.h:
+
+/usr/include/sys/types.h:
+
+/usr/include/bits/struct_rwlock.h:
+
+/usr/include/bits/types/struct_itimerspec.h:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdarg.h:
+
+/home/luis/Dev/jogo_psel_fog/src/main.c:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stddef.h:
+
+/usr/include/endian.h:
+
+/home/luis/Dev/jogo_psel_fog/include/GLFW/glfw3.h:
+
+/usr/include/asm-generic/errno-base.h:
+
+/usr/include/bits/fp-logb.h:
+
+/usr/include/asm-generic/errno.h:
+
+/usr/lib/libgcc_s.so.1:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/syslimits.h:
+
+/usr/include/bits/confname.h:
+
+/usr/include/bits/errno.h:
+
+/usr/include/bits/long-double.h:
+
+/home/luis/Dev/jogo_psel_fog/include/glad/glad.h:
+
+/usr/include/bits/eventfd.h:
+
+/usr/include/bits/types/FILE.h:
+
+/usr/include/bits/flt-eval-method.h:
+
+/usr/include/bits/posix1_lim.h:
+
+/usr/lib/libstdc++.so.6:
+
+/usr/include/bits/getopt_posix.h:
+
+/usr/include/bits/libm-simd-decl-stubs.h:
+
+/usr/include/bits/mathcalls-macros.h:
+
+/usr/include/bits/types/clock_t.h:
+
+/usr/include/bits/types/__fpos_t.h:
+
+/usr/include/bits/mathcalls.h:
+
+/usr/include/bits/fp-fast.h:
+
+/usr/include/bits/poll.h:
+
+/usr/include/bits/posix2_lim.h:
+
+/usr/include/bits/atomic_wide_counter.h:
+
+/home/luis/Dev/jogo_psel_fog/include/stb_truetype.h:
+
+/usr/include/bits/posix_opt.h:
+
+/usr/include/sys/time.h:
+
+/usr/include/bits/pthread_stack_min-dynamic.h:
+
+/usr/include/bits/pthread_stack_min.h:
+
+/usr/lib/libGLU.so:
+
+/usr/include/bits/setjmp.h:
+
+/usr/include/bits/types/struct___jmp_buf_tag.h:
+
+/usr/lib/ld-linux-x86-64.so.2:
+
+/usr/include/assert.h:
+
+/usr/include/bits/stat.h:
+
+/usr/include/bits/stdio_lim.h:
+
+/usr/include/bits/types/__mbstate_t.h:
+
+/usr/include/bits/time.h:
+
+/usr/include/bits/types/time_t.h:
+
+/usr/include/bits/struct_stat.h:
+
+/usr/include/bits/types/mbstate_t.h:
+
+/usr/include/bits/unistd_ext.h:
+
+/usr/include/linux/errno.h:
+
+/usr/include/pthread.h:
+
+/usr/include/time.h:
+
+/usr/include/unistd.h:
+
+/usr/lib/gcc/x86_64-pc-linux-gnu/16.1.1/include/stdint.h:
+
+/usr/include/wchar.h:

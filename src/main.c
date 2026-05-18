@@ -4,6 +4,12 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
+#define STB_VORBIS_IMPLEMENTATION
+#include "stb_vorbis.c"
+
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -214,8 +220,8 @@ vec3  vec3_cross(vec3* a, vec3* b);
 float vec3_dot(vec3* a, vec3* b);
 vec3  vec3_lerp(vec3* a, vec3* b, float t);
 float lerp(float a, float b, float t);
-vec3 vec3_from_scalar(float scalar);
-vec3 vec3_negate(vec3* vec);
+vec3  vec3_from_scalar(float scalar);
+vec3  vec3_negate(vec3* vec);
 
 mat4 mat4_identity();
 mat4 mat4_multiply(mat4* a, mat4* b);
@@ -229,7 +235,7 @@ mat4 mat4_perspective(float fov, float aspect, float near, float far);
 mat4 mat4_look_at(vec3 eye, vec3 center, vec3 up);
 
 // ------------------------------------------------------------------
-// math interno (renderer)
+// math interno
 // ------------------------------------------------------------------
 
 static void mat4_identity_raw(float out[16])
@@ -267,15 +273,19 @@ static void build_scale(float out[16], float sx, float sy, float sz)
 static void build_rotate_x(float out[16], float a)
 {
     mat4_identity_raw(out);
-    out[5]  =  cosf(a); out[9]  = -sinf(a);
-    out[6]  =  sinf(a); out[10] =  cosf(a);
+    out[5]  =  cosf(a);
+    out[9]  = -sinf(a);
+    out[6]  =  sinf(a);
+    out[10] =  cosf(a);
 }
 
 static void build_rotate_y(float out[16], float a)
 {
     mat4_identity_raw(out);
-    out[0]  =  cosf(a); out[8]  =  sinf(a);
-    out[2]  = -sinf(a); out[10] =  cosf(a);
+    out[0]  =  cosf(a);
+    out[8]  =  sinf(a);
+    out[2]  = -sinf(a);
+    out[10] =  cosf(a);
 }
 
 static void build_rotate_z(float out[16], float a)
@@ -1788,6 +1798,10 @@ int sign(int n)
 // snake
 // ------------------------------------------------------------------
 
+#define SNAKE_BASE_INTERVAL 0.15f
+#define SNAKE_MIN_INTERVAL 0.05f
+#define SNAKE_SPEED_FACTOR 0.002f
+
 typedef struct
 {
     vec3_array_t segments;
@@ -1890,12 +1904,42 @@ void snake_update(snake_t* snake, float current_time)
     int hit_sign = 0;
     float hit_coord = 0.0f;
 
-    if      (new_head.x >  half) { hit_axis = 0; hit_sign =  1; hit_coord =  half; }
-    else if (new_head.x < -half) { hit_axis = 0; hit_sign = -1; hit_coord = -half; }
-    else if (new_head.y >  half) { hit_axis = 1; hit_sign =  1; hit_coord =  half; }
-    else if (new_head.y < -half) { hit_axis = 1; hit_sign = -1; hit_coord = -half; }
-    else if (new_head.z >  half) { hit_axis = 2; hit_sign =  1; hit_coord =  half; }
-    else if (new_head.z < -half) { hit_axis = 2; hit_sign = -1; hit_coord = -half; }
+    if (new_head.x >  half)
+    {
+        hit_axis = 0;
+        hit_sign = 1;
+        hit_coord = half;
+    }
+    else if (new_head.x < -half)
+    {
+        hit_axis = 0;
+        hit_sign = -1;
+        hit_coord = -half;
+    }
+    else if (new_head.y >  half)
+    {
+        hit_axis = 1;
+        hit_sign =  1;
+        hit_coord =  half;
+    }
+    else if (new_head.y < -half)
+    {
+        hit_axis = 1;
+        hit_sign = -1;
+        hit_coord = -half;
+    }
+    else if (new_head.z >  half)
+    {
+        hit_axis = 2;
+        hit_sign =  1;
+        hit_coord =  half;
+    }
+    else if (new_head.z < -half)
+    {
+        hit_axis = 2;
+        hit_sign = -1;
+        hit_coord = -half;
+    }
 
     if (hit_axis != -1)
     {
@@ -1933,12 +1977,23 @@ void snake_update(snake_t* snake, float current_time)
     snake->segments.data[0] = new_head;
 }
 
+void snake_update_speed(snake_t* snake)
+{
+    int score = snake->segments.size - 4;
+    if (score < 0) score = 0;
+    float interval = SNAKE_BASE_INTERVAL - (score * SNAKE_SPEED_FACTOR);
+    if (interval < SNAKE_MIN_INTERVAL)
+        interval = SNAKE_MIN_INTERVAL;
+    snake->tick_interval = interval;
+}
+
 void snake_grow(snake_t* snake)
 {
     if (snake->segments.size > 0)
     {
         vec3* tail = vec3_array_get(&snake->segments, snake->segments.size - 1);
         vec3_array_push(&snake->segments, *tail);
+        snake_update_speed(snake);
     }
 }
 
@@ -2188,14 +2243,14 @@ static GLuint text_compile_shader(const char* vs_src, const char* fs_src)
  
 static void text_set_projection(int w, int h)
 {
-    float L = 0.0f, R = (float)w;
+    float _L = 0.0f, _R = (float)w;
     float T = 0.0f, B = (float)h;
  
     float m[16] = {
-        2.0f/(R-L),    0,             0,  0,
+        2.0f/(_R-_L),    0,             0,  0,
         0,             2.0f/(T-B),    0,  0,
         0,             0,            -1,  0,
-        -(R+L)/(R-L), -(T+B)/(T-B),  0,  1
+        -(_R+_L)/(_R-_L), -(T+B)/(T-B),  0,  1
     };
  
     glUseProgram(g_text.shader);
@@ -2408,14 +2463,27 @@ const char MAIN_MENU_OPTIONS[3][8] = { "Start", "Options", "Exit" };
 vec2 main_menu_items_scale[3] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
 
 int options_selected_item = 0;
-int options_max_items = 2;
-const char OPTIONS_OPTIONS[2][20] = { "Back", "Toggle Debug Cam" };
-vec2 options_items_scale[2] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
+int options_max_items = 3;
+const char OPTIONS_OPTIONS[3][20] = { "Back", "Toggle Music", "Toggle SFX" };
+vec2 options_items_scale[3] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
 
 int pause_selected_item = 0;
-int pause_max_items = 2;
-const char PAUSE_OPTIONS[2][10] = { "Resume", "Main Menu" };
-vec2 pause_items_scale[2] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
+int pause_max_items = 4;
+const char PAUSE_OPTIONS[4][10] = { "Resume", "Toggle Music", "Toggle SFX", "Main Menu" };
+vec2 pause_items_scale[4] = { (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f }, (vec2){ 1.0f, 1.0f } };
+
+// ------------------------------------------------------------------
+// engine de áudio
+// ------------------------------------------------------------------
+
+static ma_engine audio_engine;
+static ma_sound bgm_music;
+
+// flags
+static bool f_music = true;
+static bool f_sfx = true;
+
+float bgm_music_volume = 0.2f;
 
 // ------------------------------------------------------------------
 // callbacks
@@ -2433,7 +2501,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 const int   WINDOW_WIDTH  = 1366;
 const int   WINDOW_HEIGHT = 768;
-const char* WINDOW_TITLE  = "Game FOG";
+const char* WINDOW_TITLE  = "Cube Snake";
 
 int main()
 {
@@ -2466,7 +2534,6 @@ int main()
 
     glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glEnable(GL_BLEND);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -2480,9 +2547,18 @@ int main()
     time_init();
     input_init(window);
 
+    ma_result result = ma_engine_init(NULL, &audio_engine);
+
+    result = ma_sound_init_from_file(&audio_engine, "assets/bgm.ogg",
+        MA_SOUND_FLAG_STREAM, NULL, NULL, &bgm_music);
+    
+    ma_sound_set_looping(&bgm_music, MA_TRUE);
+    ma_sound_start(&bgm_music);
+    ma_sound_set_volume(&bgm_music, bgm_music_volume);
+
     shader_t shader = shader_create_from_src(vertex_src, fragment_src);
 
-    renderer3d_t renderer;
+    renderer3d_t renderer; 
     renderer3d_init(&renderer);
 
     mat4 projection = mat4_perspective(
@@ -2497,60 +2573,100 @@ int main()
 
     vertex3d_t cube_verts[] =
     {
-        {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,0},{0,0,1},1}, {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{0,0,1},1},
-        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{0,0,1},1}, {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{0,0,1},1},
-        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{0,0,-1},1},{{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{1,0},{0,0,-1},1},
-        {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{1,1},{0,0,-1},1},{{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{0,0,-1},1},
-        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{-1,0,0},1},{{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{-1,0,0},1},
-        {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{-1,0,0},1},{{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{-1,0,0},1},
-        {{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{1,0,0},1}, {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{1,0,0},1},
-        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{1,0,0},1}, {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{1,0,0},1},
-        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{0,-1,0},1},{{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{1,0},{0,-1,0},1},
-        {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,1},{0,-1,0},1},{{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,1},{0,-1,0},1},
-        {{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,0},{0,1,0},1}, {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{1,0},{0,1,0},1},
-        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{0,1,0},1}, {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{0,1,0},1},
+        {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,0},{ 0, 0, 1},1},
+        {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{ 0, 0, 1},1},
+        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{ 0, 0, 1},1},
+        {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{ 0, 0, 1},1},
+        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{ 0, 0,-1},1},
+        {{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{1,0},{ 0, 0,-1},1},
+        {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{1,1},{ 0, 0,-1},1},
+        {{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{ 0, 0,-1},1},
+        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{-1, 0, 0},1},
+        {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{-1, 0, 0},1},
+        {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{-1, 0, 0},1},
+        {{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{-1, 0, 0},1},
+        {{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{ 1, 0, 0},1},
+        {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{ 1, 0, 0},1},
+        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{ 1, 0, 0},1},
+        {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{ 1, 0, 0},1},
+        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{ 0,-1, 0},1},
+        {{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{1,0},{ 0,-1, 0},1},
+        {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,1},{ 0,-1, 0},1},
+        {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,1},{ 0,-1, 0},1},
+        {{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,0},{ 0, 1, 0},1},
+        {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{1,0},{ 0, 1, 0},1},
+        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{ 0, 1, 0},1},
+        {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{ 0, 1, 0},1},
     };
 
     vertex3d_t cube_no_tex_verts[] =
     {
-        {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,0},{0,0,1},0}, {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{0,0,1},0},
-        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{0,0,1},0}, {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{0,0,1},0},
-        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{0,0,-1},0},{{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{1,0},{0,0,-1},0},
-        {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{1,1},{0,0,-1},0},{{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{0,0,-1},0},
-        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{-1,0,0},0},{{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{-1,0,0},0},
-        {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{-1,0,0},0},{{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{-1,0,0},0},
-        {{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{1,0,0},0}, {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{1,0,0},0},
-        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{1,0,0},0}, {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{1,0,0},0},
-        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{0,-1,0},0},{{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{1,0},{0,-1,0},0},
-        {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,1},{0,-1,0},0},{{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,1},{0,-1,0},0},
-        {{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,0},{0,1,0},0}, {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{1,0},{0,1,0},0},
-        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{0,1,0},0}, {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{0,1,0},0},
+        {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,0},{ 0, 0, 1},0},
+        {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{ 0, 0, 1},0},
+        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{ 0, 0, 1},0},
+        {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{ 0, 0, 1},0},
+        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{ 0, 0,-1},0},
+        {{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{1,0},{ 0, 0,-1},0},
+        {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{1,1},{ 0, 0,-1},0},
+        {{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{ 0, 0,-1},0},
+        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{-1, 0, 0},0},
+        {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{-1, 0, 0},0},
+        {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{-1, 0, 0},0},
+        {{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{-1, 0, 0},0},
+        {{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{ 1, 0, 0},0},
+        {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,0},{ 1, 0, 0},0},
+        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{ 1, 0, 0},0},
+        {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,1},{ 1, 0, 0},0},
+        {{-0.5f,-0.5f,-0.5f},{1,1,1,0.5},{0,0},{ 0,-1, 0},0},
+        {{ 0.5f,-0.5f,-0.5f},{1,1,1,0.5},{1,0},{ 0,-1, 0},0},
+        {{ 0.5f,-0.5f, 0.5f},{1,1,1,0.5},{1,1},{ 0,-1, 0},0},
+        {{-0.5f,-0.5f, 0.5f},{1,1,1,0.5},{0,1},{ 0,-1, 0},0},
+        {{-0.5f, 0.5f,-0.5f},{1,1,1,0.5},{0,0},{ 0, 1, 0},0},
+        {{ 0.5f, 0.5f,-0.5f},{1,1,1,0.5},{1,0},{ 0, 1, 0},0},
+        {{ 0.5f, 0.5f, 0.5f},{1,1,1,0.5},{1,1},{ 0, 1, 0},0},
+        {{-0.5f, 0.5f, 0.5f},{1,1,1,0.5},{0,1},{ 0, 1, 0},0},
     };
 
     uint32_t cube_indices[] =
     {
-         0, 1, 2,  2, 3, 0,   4, 5, 6,  6, 7, 4,
-         8, 9,10, 10,11, 8,  12,13,14, 14,15,12,
-        16,17,18, 18,19,16,  20,21,22, 22,23,20,
+         0,  1, 2,  2, 3, 0,
+         4,  5, 6,  6, 7, 4,
+         8,  9,10, 10,11, 8,
+        12, 13,14, 14,15,12,
+        16, 17,18, 18,19,16,
+        20, 21,22, 22,23,20,
     };
 
-    // logo_verts: tex_index = 1.0f em TODOS os vértices
     vertex3d_t logo_verts[] = {
-        {{-0.5f,-0.5f, 0.5f},{1,0,0,1},{0,0},{0,0,1},  1}, {{ 0.5f,-0.5f, 0.5f},{1,0,0,1},{1,0},{0,0,1},  1},
-        {{ 0.5f, 0.5f, 0.5f},{1,0,0,1},{1,1},{0,0,1},  1}, {{-0.5f, 0.5f, 0.5f},{1,0,0,1},{0,1},{0,0,1},  1},
-        {{-0.5f,-0.5f,-0.5f},{0,1,0,1},{0,0},{0,0,-1}, 1}, {{ 0.5f,-0.5f,-0.5f},{0,1,0,1},{1,0},{0,0,-1}, 1},
-        {{ 0.5f, 0.5f,-0.5f},{0,1,0,1},{1,1},{0,0,-1}, 1}, {{-0.5f, 0.5f,-0.5f},{0,1,0,1},{0,1},{0,0,-1}, 1},
-        {{-0.5f,-0.5f,-0.5f},{0,0,1,1},{0,0},{-1,0,0}, 1}, {{-0.5f,-0.5f, 0.5f},{0,0,1,1},{1,0},{-1,0,0}, 1},
-        {{-0.5f, 0.5f, 0.5f},{0,0,1,1},{1,1},{-1,0,0}, 1}, {{-0.5f, 0.5f,-0.5f},{0,0,1,1},{0,1},{-1,0,0}, 1},
-        {{ 0.5f,-0.5f,-0.5f},{1,1,0,1},{0,0},{1,0,0},  1}, {{ 0.5f,-0.5f, 0.5f},{1,1,0,1},{1,0},{1,0,0},  1},
-        {{ 0.5f, 0.5f, 0.5f},{1,1,0,1},{1,1},{1,0,0},  1}, {{ 0.5f, 0.5f,-0.5f},{1,1,0,1},{0,1},{1,0,0},  1},
-        {{-0.5f,-0.5f,-0.5f},{0,1,1,1},{0,0},{0,-1,0}, 1}, {{ 0.5f,-0.5f,-0.5f},{0,1,1,1},{1,0},{0,-1,0}, 1},
-        {{ 0.5f,-0.5f, 0.5f},{0,1,1,1},{1,1},{0,-1,0}, 1}, {{-0.5f,-0.5f, 0.5f},{0,1,1,1},{0,1},{0,-1,0}, 1},
-        {{-0.5f, 0.5f,-0.5f},{1,0,1,1},{0,0},{0,1,0},  1}, {{ 0.5f, 0.5f,-0.5f},{1,0,1,1},{1,0},{0,1,0},  1},
-        {{ 0.5f, 0.5f, 0.5f},{1,0,1,1},{1,1},{0,1,0},  1}, {{-0.5f, 0.5f, 0.5f},{1,0,1,1},{0,1},{0,1,0},  1},
+        {{-0.5f,-0.5f, 0.5f},{1,0,0,1},{0,0},{ 0, 0, 1},1},
+        {{ 0.5f,-0.5f, 0.5f},{1,0,0,1},{1,0},{ 0, 0, 1},1},
+        {{ 0.5f, 0.5f, 0.5f},{1,0,0,1},{1,1},{ 0, 0, 1},1},
+        {{-0.5f, 0.5f, 0.5f},{1,0,0,1},{0,1},{ 0, 0, 1},1},
+        {{-0.5f,-0.5f,-0.5f},{0,1,0,1},{0,0},{ 0, 0,-1},1},
+        {{ 0.5f,-0.5f,-0.5f},{0,1,0,1},{1,0},{ 0, 0,-1},1},
+        {{ 0.5f, 0.5f,-0.5f},{0,1,0,1},{1,1},{ 0, 0,-1},1},
+        {{-0.5f, 0.5f,-0.5f},{0,1,0,1},{0,1},{ 0, 0,-1},1},
+        {{-0.5f,-0.5f,-0.5f},{0,0,1,1},{0,0},{-1, 0, 0},1},
+        {{-0.5f,-0.5f, 0.5f},{0,0,1,1},{1,0},{-1, 0, 0},1},
+        {{-0.5f, 0.5f, 0.5f},{0,0,1,1},{1,1},{-1, 0, 0},1},
+        {{-0.5f, 0.5f,-0.5f},{0,0,1,1},{0,1},{-1, 0, 0},1},
+        {{ 0.5f,-0.5f,-0.5f},{1,1,0,1},{0,0},{ 1, 0, 0},1},
+        {{ 0.5f,-0.5f, 0.5f},{1,1,0,1},{1,0},{ 1, 0, 0},1},
+        {{ 0.5f, 0.5f, 0.5f},{1,1,0,1},{1,1},{ 1, 0, 0},1},
+        {{ 0.5f, 0.5f,-0.5f},{1,1,0,1},{0,1},{ 1, 0, 0},1},
+        {{-0.5f,-0.5f,-0.5f},{0,1,1,1},{0,0},{ 0,-1, 0},1},
+        {{ 0.5f,-0.5f,-0.5f},{0,1,1,1},{1,0},{ 0,-1, 0},1},
+        {{ 0.5f,-0.5f, 0.5f},{0,1,1,1},{1,1},{ 0,-1, 0},1},
+        {{-0.5f,-0.5f, 0.5f},{0,1,1,1},{0,1},{ 0,-1, 0},1},
+        {{-0.5f, 0.5f,-0.5f},{1,0,1,1},{0,0},{ 0, 1, 0},1},
+        {{ 0.5f, 0.5f,-0.5f},{1,0,1,1},{1,0},{ 0, 1, 0},1},
+        {{ 0.5f, 0.5f, 0.5f},{1,0,1,1},{1,1},{ 0, 1, 0},1},
+        {{-0.5f, 0.5f, 0.5f},{1,0,1,1},{0,1},{ 0, 1, 0},1},
     };
     float logo_angle = 0.0f;
     mesh_t logo_cube = mesh_create(logo_verts, 24, cube_indices, 36);
+
+    model_asset_t logo_model_asset = model_asset_load("assets/title.obj", "assets/white.png", 1.0f);
 
     game_world_t world;
     game_world_init(&world);
@@ -2678,14 +2794,14 @@ int main()
 
                 mat4 logo_model = mat4_identity();
 
-                vec3 logo_scale = (vec3){ 1.8f, 1.8f, 1.8f };
+                vec3 logo_scale = (vec3){ 0.12f, 0.12f, 0.12f };
                 logo_model = mat4_scale(&logo_model, &logo_scale);
 
                 vec3 axis = (vec3){ 0.0f, -0.8f, -0.2f };
-                logo_model = mat4_rotate(&logo_model, &axis, logo_angle);
+                logo_model = mat4_rotate(&logo_model, &axis, sinf(logo_angle) * 0.5f);
 
                 logo_model.m[12] = 0.0f;
-                logo_model.m[13] = 1.5f;
+                logo_model.m[13] = 0.8f;
                 logo_model.m[14] = -6.0f;
 
                 mat4 logo_proj = mat4_perspective(PI / 3.0f, (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 200.0f);
@@ -2694,7 +2810,7 @@ int main()
 
                 vec3 cam_pos = vec3_zero();
 
-                renderer3d_draw_mesh(&logo_cube, shader.id, &logo_model, &logo_view, &logo_proj, &logo_texture, &white, 1.0f, &cam_pos);
+                renderer3d_draw_mesh(&logo_model_asset.mesh, shader.id, &logo_model, &logo_view, &logo_proj, &logo_model_asset.texture, &white, 1.0f, &cam_pos);
 
                 for (int i = 0; i < main_menu_max_items; i++)
                 {
@@ -2716,7 +2832,11 @@ int main()
                     main_menu_selected_item--;
                     if (main_menu_selected_item < 0)
                         main_menu_selected_item = main_menu_max_items - 1;
+                    
                     main_menu_items_scale[main_menu_selected_item] = (vec2){ 1.5f, 1.5f };
+
+                    if (f_sfx)
+                        ma_engine_play_sound(&audio_engine, "assets/menu_select.wav", NULL);
                 }
 
                 if (input_get_key_down(GLFW_KEY_S))
@@ -2724,7 +2844,11 @@ int main()
                     main_menu_selected_item++;
                     if (main_menu_selected_item > main_menu_max_items - 1)
                         main_menu_selected_item = 0;
+                    
                     main_menu_items_scale[main_menu_selected_item] = (vec2){ 1.5f, 1.5f };
+
+                    if (f_sfx)
+                        ma_engine_play_sound(&audio_engine, "assets/menu_select.wav", NULL);
                 }
 
                 if (input_get_key_down(GLFW_KEY_ENTER))
@@ -2759,7 +2883,7 @@ int main()
                     WINDOW_HEIGHT - 100.0f,
                     1, 1, 1, 1,
                     1.0f, 1.0f,
-                    "*Feito para a 2a fase do processo seletivo do FOG com C puro + OpenGL*"
+                    "*Feito para a 2a fase do processo seletivo do FOG com C + OpenGL + GLFW*"
                 );
             }
             break;
@@ -2774,10 +2898,13 @@ int main()
                     1, 1, 1, 1, 1.5f, 1.5f, "OPTIONS"
                 );
 
-                char debug_label[32];
-                snprintf(debug_label, sizeof(debug_label), "Debug Cam: %s", camera_free ? "ON" : "OFF");
+                char music_label[32];
+                snprintf(music_label, sizeof(music_label), "Toggle Music: %s", f_music ? "ON" : "OFF");
 
-                const char* options_labels[2] = { "Back", debug_label };
+                char sfx_label[32];
+                snprintf(sfx_label, sizeof(sfx_label), "Toggle SFX: %s", f_sfx ? "ON" : "OFF");
+
+                const char* options_labels[3] = { "Back", music_label, sfx_label };
 
                 for (int i = 0; i < options_max_items; i++)
                 {
@@ -2799,7 +2926,11 @@ int main()
                     options_selected_item--;
                     if (options_selected_item < 0)
                         options_selected_item = options_max_items - 1;
-                    options_items_scale[options_selected_item] = (vec2){ 1.5f, 1.5f };
+                    
+                        options_items_scale[options_selected_item] = (vec2){ 1.5f, 1.5f };
+                    
+                    if (f_sfx)
+                        ma_engine_play_sound(&audio_engine, "assets/menu_select.wav", NULL);
                 }
 
                 if (input_get_key_down(GLFW_KEY_S))
@@ -2807,7 +2938,11 @@ int main()
                     options_selected_item++;
                     if (options_selected_item > options_max_items - 1)
                         options_selected_item = 0;
-                    options_items_scale[options_selected_item] = (vec2){ 1.5f, 1.5f };
+                    
+                        options_items_scale[options_selected_item] = (vec2){ 1.5f, 1.5f };
+
+                    if (f_sfx)
+                        ma_engine_play_sound(&audio_engine, "assets/menu_select.wav", NULL);
                 }
 
                 if (input_get_key_down(GLFW_KEY_ENTER))
@@ -2819,8 +2954,14 @@ int main()
                         break;
 
                         case 1:
-                            camera_free = !camera_free;
+                            f_music = !f_music;
+                            ma_sound_set_volume(&bgm_music, bgm_music_volume * f_music);
                             options_items_scale[1] = (vec2){ 1.3f, 1.3f };
+                        break;
+
+                        case 2:
+                            f_sfx = !f_sfx;
+                            options_items_scale[2] = (vec2){ 1.3f, 1.3f };
                         break;
                     }
                 }
@@ -2843,6 +2984,8 @@ int main()
                 {
                     float t = time_total();
                     apple->transform.rotation.y += dt * 1.8f;
+                    apple->transform.rotation.x += dt * 1.8f * 0.66f;
+                    apple->transform.rotation.z += dt * 1.8f * 0.33f;
                 }
 
                 if (!game_over)
@@ -2880,6 +3023,8 @@ int main()
                         {
                             game_world_remove(&world, apple_id);
                             snake_grow(&snake);
+                            if (f_sfx)
+                                ma_engine_play_sound(&audio_engine, "assets/apple_collect.ogg", NULL);
                             apple_id = apple_create(&world, &apple_model.mesh, &apple_model.texture, &snake);
                             apple = game_world_get_object(&world, apple_id);
                         }
@@ -3006,6 +3151,15 @@ int main()
                     1, 1, 0.3f, 1, 1.8f, 1.8f, "PAUSED"
                 );
 
+
+                char music_label[32];
+                snprintf(music_label, sizeof(music_label), "Toggle Music: %s\n", f_music ? "ON" : "OFF");
+
+                char sfx_label[32];
+                snprintf(sfx_label, sizeof(sfx_label), "Toggle SFX: %s\n", f_sfx ? "ON" : "OFF");
+
+                char* options[4] = { "Continue", music_label, sfx_label, "Main menu" };
+
                 for (int i = 0; i < pause_max_items; i++)
                 {
                     vec3 color = pause_selected_item == i ? SELECTED_ITEM_COLOR : NORMAL_ITEM_COLOR;
@@ -3017,7 +3171,7 @@ int main()
                         WINDOW_HEIGHT / 2.0f + (i - 0) * 50.0f,
                         color.x, color.y, color.z, 1.0f,
                         pause_items_scale[i].x, pause_items_scale[i].y,
-                        PAUSE_OPTIONS[i]
+                        options[i]
                     );
                 }
 
@@ -3031,6 +3185,9 @@ int main()
                     }
                     
                     pause_items_scale[pause_selected_item] = (vec2){ 1.5f, 1.5f };
+
+                    if (f_sfx)
+                        ma_engine_play_sound(&audio_engine, "assets/menu_select.wav", NULL);
                 }
 
                 if (input_get_key_down(GLFW_KEY_S))
@@ -3043,6 +3200,9 @@ int main()
                     }
                         
                     pause_items_scale[pause_selected_item] = (vec2){ 1.5f, 1.5f };
+
+                    if (f_sfx)
+                        ma_engine_play_sound(&audio_engine, "assets/menu_select.wav", NULL);
                 }
 
                 if (input_get_key_down(GLFW_KEY_ENTER))
@@ -3054,8 +3214,18 @@ int main()
                         break;
 
                         case 1:
+                            f_music = !f_music;
+                            ma_sound_set_volume(&bgm_music, bgm_music_volume * f_music);
+                            options_items_scale[1] = (vec2){ 1.3f, 1.3f };
+                        break;
+
+                        case 2:
+                            f_sfx = !f_sfx;
+                            options_items_scale[2] = (vec2){ 1.3f, 1.3f };
+                        break;
+
+                        case 3:
                             game_mode = MAIN_MENU_MODE;
-                            main_menu_selected_item = 0;
                         break;
                     }
                 }
@@ -3081,6 +3251,10 @@ int main()
     snake_free(&snake);
     game_object_array_free(&(world.objects));
     text_renderer_destroy();
+
+    ma_sound_uninit(&bgm_music);
+    ma_engine_uninit(&audio_engine);
+
     glfwTerminate();
     return 0;
 }
